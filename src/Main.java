@@ -11,16 +11,18 @@ import java.nio.file.attribute.FileAttribute;
 
 
 // TODO: terminal
+record GameId(Integer id) {};
+record UserId(Integer id) {};
+record RentId(Integer id) {};
+
+enum GameGenre {
+  two_d, three_d, platformer, fps, triple_a, indie, schmovement, bossfight
+}
+// ? dispositivo (console / pc), versão (ps2 / ps5), marca (nintendo / playstation), sistema operacional (windows / linux)
+enum GamePlatform {
+  console, mobile, pc
+}
 /*
-interface UserId {
-  Integer id;
-}
-interface GameId {
-  Integer id;
-}
-interface RentId {
-  Integer id;
-}
 
 public class UserRegistry {
   private UserId id;
@@ -43,20 +45,19 @@ public class Auth {
 
   }
 }
-public enum GameGenre {
-  two_d, three_d, platformer, fps, triple_a, indie, schmovement, bossfight
+*/
+record Game( GameId id, String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity ) {}
+
+
+class GameRegistry {
+  static GameId last_id = new GameId(0);
+
+  public static Game create(String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity) {
+    GameRegistry.last_id = new GameId(GameRegistry.last_id.id() + 1);
+    return new Game(new GameId(GameRegistry.last_id.id() - 1), title, genre, platform, quantity);
+  }
 }
-// ? dispositivo (console / pc), versão (ps2 / ps5), marca (nintendo / playstation), sistema operacional (windows / linux)
-public enum GamePlatform {
-  console, mobile, pc
-}
-public class GameRegistry {
-  private GameId id;
-  private String title;
-  private GameGenre genre; 
-  private GamePlatform platform; // TODO: >1 plataforma
-  private Integer quantity;
-}
+/*
 public class GameManage {
   static GameRegistry[] games;
 
@@ -102,24 +103,30 @@ class DataPersistence {
   public static void insert_game() {
 
     String filedata = "Teste2aefjekf";
-    Path path = Paths.get(DataPersistence.directory + "games/" + "teste.txt");
+    Path path = Paths.get(DataPersistence.directory + "games/");
+    Path path_file = Path.of(path.toString(), "teste.txt");
+    // try {
+    //   Files.createDirectories(Path.of(path.toString(), "teste.txt"));
+    // } catch (IOException e){
+    //   System.out.print(e);
+    // }
     try {
-      Files.createDirectories(Paths.get(DataPersistence.directory + "games/"));
-    } catch (IOException e){
-      System.out.print(e);
-    }
-    try {
 
 
 
-      Files.createFile(path);
+      Files.createFile(path_file);
     } catch (IOException e) {
       System.out.print(e);
 
     }
     try {
+      Game game_sample = GameRegistry.create("titulo", new GameGenre[]{GameGenre.fps, GameGenre.indie}, new GamePlatform[]{GamePlatform.pc, GamePlatform.mobile}, 12);
 
-      Files.write(path, filedata.getBytes());
+      
+      System.out.print(game_sample.toString());
+
+      byte[] data = game_sample.toString().getBytes();
+      Files.write(path_file, data);
     } catch (IOException e) {
 
       System.out.print(e);
