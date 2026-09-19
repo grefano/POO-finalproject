@@ -1,1 +1,1 @@
-Game[id=GameId[id=0], title=titulo, genre=[LGameGenre;@45ee12a7, platform=[LGamePlatform;@330bedb4, quantity=12]
+{"id":{"id":205},"title":"titulo","genre":["fps","enuminvalido"],"platform":["pc","mobile"],"quantity":20}

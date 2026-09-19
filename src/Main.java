@@ -1,15 +1,11 @@
-import java.util.Date;
-
-import javax.xml.crypto.Data;
 
 import java.io.IOException;
-import java.nio.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
 
 
+// TODO: serialiazar e desserializar objetos (com GSon?)
 // TODO: terminal
 record GameId(Integer id) {};
 record UserId(Integer id) {};
@@ -100,9 +96,14 @@ public class GameRentManage {
 // abstração do banco de dados ou filesystem
 class DataPersistence {
   static String directory = "data/";
-  public static void insert_game() {
 
-    String filedata = "Teste2aefjekf";
+  // converte qualquer um dos modelos (game, rent, ...) em uma string no formato que sera armazenado
+  private static <T> String model_object_to_string(T obj) {
+    return obj.toString();
+
+  }
+  public static void insert_game(Game game) {
+
     Path path = Paths.get(DataPersistence.directory + "games/");
     Path path_file = Path.of(path.toString(), "teste.txt");
     // try {
@@ -120,13 +121,12 @@ class DataPersistence {
 
     }
     try {
-      Game game_sample = GameRegistry.create("titulo", new GameGenre[]{GameGenre.fps, GameGenre.indie}, new GamePlatform[]{GamePlatform.pc, GamePlatform.mobile}, 12);
 
       
-      System.out.print(game_sample.toString());
+      String game_str = model_object_to_string(game);
+      System.out.print(game_str);
 
-      byte[] data = game_sample.toString().getBytes();
-      Files.write(path_file, data);
+      Files.write(path_file, game_str.getBytes());
     } catch (IOException e) {
 
       System.out.print(e);
@@ -169,7 +169,8 @@ class Main {
     System.out.print("main");
 
 
-    DataPersistence.insert_game();
+    Game game_sample = GameRegistry.create("titulo", new GameGenre[]{GameGenre.fps, GameGenre.indie}, new GamePlatform[]{GamePlatform.pc, GamePlatform.mobile}, 12);
+    DataPersistence.insert_game(game_sample);
     // GameManage.register_game();
   }
   
