@@ -1,7 +1,17 @@
 import java.util.Date;
 
-// TODO: terminal
+import javax.xml.crypto.Data;
 
+import java.io.IOException;
+import java.nio.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+
+
+// TODO: terminal
+/*
 interface UserId {
   Integer id;
 }
@@ -33,20 +43,26 @@ public class Auth {
 
   }
 }
+public enum GameGenre {
+  two_d, three_d, platformer, fps, triple_a, indie, schmovement, bossfight
+}
 // ? dispositivo (console / pc), versão (ps2 / ps5), marca (nintendo / playstation), sistema operacional (windows / linux)
 public enum GamePlatform {
   console, mobile, pc
 }
 public class GameRegistry {
   private GameId id;
-  private String genre; 
   private String title;
+  private GameGenre genre; 
   private GamePlatform platform; // TODO: >1 plataforma
-  private String quantity;
+  private Integer quantity;
 }
 public class GameManage {
-  private GameRegistry[] games;
-  public static void register_game() {
+  static GameRegistry[] games;
+
+  // FIXME: >1 genre, >1 platform, etc
+  public static void register_game(String title, GameGenre genre, GamePlatform platform) { 
+    GameManage.games = [];
 
   }
 
@@ -61,6 +77,7 @@ public class GameManage {
 
   }
 }
+
 public class Rent {
   private RentId id;
   private Date return_deadline;
@@ -76,31 +93,57 @@ public class GameRentManage {
     // TODO: penalidade por atraso
 
   }
-  
+
 }
+*/
 // abstração do banco de dados ou filesystem
-public class DataPersistence {
+class DataPersistence {
+  static String directory = "data/";
   public static void insert_game() {
 
-  }
-  public static GameRegistry get_game(GameId id) {
+    String filedata = "Teste2aefjekf";
+    Path path = Paths.get(DataPersistence.directory + "games/" + "teste.txt");
+    try {
+      Files.createDirectories(Paths.get(DataPersistence.directory + "games/"));
+    } catch (IOException e){
+      System.out.print(e);
+    }
+    try {
+
+
+
+      Files.createFile(path);
+    } catch (IOException e) {
+      System.out.print(e);
+
+    }
+    try {
+
+      Files.write(path, filedata.getBytes());
+    } catch (IOException e) {
+
+      System.out.print(e);
+    }
 
   }
-  public static GameRegistry[] get_games_all() {
-
-  }
-  public static void insert_rent() {
-
-  }
-  public static RentRegistry get_rent(RentId id) {
-
-  }
-  public static void insert_user() {
-
-  }
-  public static UserRegistry get_user(UserId id) {
-
-  }
+  // public static GameRegistry get_game(GameId id) {
+  //
+  // }
+  // public static GameRegistry[] get_games_all() {
+  //
+  // }
+  // public static void insert_rent() {
+  //
+  // }
+  // public static RentRegistry get_rent(RentId id) {
+  //
+  // }
+  // public static void insert_user() {
+  //
+  // }
+  // public static UserRegistry get_user(UserId id) {
+  //
+  // }
 
 
 
@@ -115,8 +158,12 @@ class UI {
 class Main {
 
   public static void main(String[] args) {
-    GameRegistry[] registry_games = DataPersistence.get_games_all();
+    // GameRegistry[] registry_games = DataPersistence.get_games_all();
+    System.out.print("main");
 
 
+    DataPersistence.insert_game();
+    // GameManage.register_game();
   }
+  
 }
