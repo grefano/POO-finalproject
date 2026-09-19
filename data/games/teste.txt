@@ -1,1 +1,5 @@
-{"id":{"id":205},"title":"titulo","genre":["fps","enuminvalido"],"platform":["pc","mobile"],"quantity":20}
+{"id":{"id":0},"title":"celeste","genre":["indie","platformer"],"platform":["pc"],"quantity":12}
+{"id":{"id":1},"title":"cuphead","genre":["indie","bossfight"],"platform":["pc"],"quantity":5}
+{"id":{"id":2},"title":"fezes","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":999}
+{"id":{"id":5},"title":"teste","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":999}
+{"id":{"id":8},"title":"testedenovo","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":999}

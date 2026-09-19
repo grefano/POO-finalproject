@@ -1,38 +1,47 @@
 package com.meuprojeto.app;
 
-
-
+import java.util.List;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.google.gson.Gson;
 
 
-// TODO: serialiazar e desserializar objetos (com GSon?)
 // TODO: terminal
+// FIXME: repetição classe XRegistry que define id
+//
 record GameId(Integer id) {};
 record UserId(Integer id) {};
 record RentId(Integer id) {};
 
-enum GameGenre {
-  two_d, three_d, platformer, fps, triple_a, indie, schmovement, bossfight
-}
+enum GameGenre { two_d, three_d, platformer, fps, triple_a, indie, schmovement, bossfight }
 // ? dispositivo (console / pc), versão (ps2 / ps5), marca (nintendo / playstation), sistema operacional (windows / linux)
-enum GamePlatform {
-  console, mobile, pc
-}
-/*
+enum GamePlatform { console, mobile, pc }
 
-public class UserRegistry {
-  private UserId id;
+record User(UserId id, String name){}
+
+class UserRegistry {
+  static UserId last_id = new UserId(0);
+
+  public static User create(String name) {
+    // FIXME: se eu defino o last_id antes de criar os users ele pode ser maior que o necessario se os users criados ja existirem
+    UserRegistry.last_id = new UserId(UserRegistry.last_id.id() + 1);
+    return new User(new UserId(UserRegistry.last_id.id() - 1), name);
+  }
 }
-public class UserProfile { // FIXME: UserProfile vs UserRegistry
+class UserProfile { // FIXME: UserProfile vs UserRegistry
   // historico de alugueis
 
 }
 
-public class UserManage {
+class UserManage {
   public static void register_user() {
 
   }
@@ -40,12 +49,11 @@ public class UserManage {
 
   }
 }
-public class Auth {
+class Auth {
   public static void login(String username, String password) {
 
   }
 }
-*/
 record Game( GameId id, String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity ) {}
 
 
@@ -110,7 +118,16 @@ class DataPersistence {
 
 
   }
+  private static <T> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
+    Gson gson = new Gson();
+    try (Stream<String> lines = Files.lines(path_file)){
+      return lines.map(line -> gson.fromJson(line, type)).collect(Collectors.toList());
+    }
+
+
+  }
   public static void insert_game(Game game) {
+    // TODO: falhar se nome já está sendo usado
 
     Path path = Paths.get(DataPersistence.directory + "games/");
     Path path_file = Path.of(path.toString(), "teste.txt");
@@ -128,50 +145,58 @@ class DataPersistence {
       System.out.println(e);
 
     }
-    // try {
-    //
-    //
-    //   String game_str = model_object_to_string(game);
-    //   System.out.println(game_str);
-    //
-    //   Files.write(path_file, game_str.getBytes());
-    // } catch (IOException e) {
-    //
-    //   System.out.println(e);
-    // }
+      List<Game> games = get_games_all();
+      for (Game g : games) {
+	if (game.title().equals(g.title())){
+	  System.out.println("equal");
+	  return;
 
-    try {
-      Files.lines(path_file).forEach(line -> {
+	}
+      	
+      }
 
-	Gson gson = new Gson();
-	System.out.println(line);
-	Game game_read = gson.fromJson(line, Game.class);
 
-	System.out.println(gson.toJson(game_read));
-      });
+      String game_str = model_object_to_string(game) + System.lineSeparator();
+      System.out.println(game_str);
 
-    } catch (IOException e) {
+      try {
 
-      System.out.println(e);
-    }
+      Files.write(path_file, game_str.getBytes(), StandardOpenOption.APPEND);
+      } catch (IOException e) {
+	System.out.println(e);
+      }
+
 
   }
   // public static GameRegistry get_game(GameId id) {
   //
   // }
-  // public static GameRegistry[] get_games_all() {
+  // public static GameRegistry get_game_by_name(String name) {
   //
   // }
-  // public static void insert_rent() {
+  public static List<Game> get_games_all() {
+
+    Path path = Paths.get(DataPersistence.directory + "games/teste.txt");
+    try {
+
+    List<Game> games = DataPersistence.read_all_rows(path, Game.class);
+    return games;
+    } catch (IOException e){
+      return new ArrayList<Game>();
+    }
+    
+
+  }
+  public static void insert_rent() {
+
+  }
+  // public static Rent get_rent(RentId id) {
   //
   // }
-  // public static RentRegistry get_rent(RentId id) {
-  //
-  // }
-  // public static void insert_user() {
-  //
-  // }
-  // public static UserRegistry get_user(UserId id) {
+  public static void insert_user() {
+
+  }
+  // public static User get_user(UserId id) {
   //
   // }
 
@@ -188,12 +213,34 @@ class UI {
 class App {
 
   public static void main(String[] args) {
-    // GameRegistry[] registry_games = DataPersistence.get_games_all();
     System.out.println("main");
 
 
-    Game game_sample = GameRegistry.create("titulo", new GameGenre[]{GameGenre.fps, GameGenre.indie}, new GamePlatform[]{GamePlatform.pc, GamePlatform.mobile}, 12);
-    DataPersistence.insert_game(game_sample);
+    List<Game> games = DataPersistence.get_games_all();
+    for (Game g : games) {
+      if (g.id().id() > GameRegistry.last_id.id()){
+	GameRegistry.last_id = g.id();
+      }
+    	
+    }
+    
+    DataPersistence.insert_game(
+      GameRegistry.create("celeste", new GameGenre[]{GameGenre.indie, GameGenre.platformer}, new GamePlatform[]{GamePlatform.pc}, 12)
+    );
+    DataPersistence.insert_game(
+      GameRegistry.create("cuphead", new GameGenre[]{GameGenre.indie, GameGenre.bossfight}, new GamePlatform[]{GamePlatform.pc}, 5)
+    );
+    DataPersistence.insert_game(
+      GameRegistry.create("fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999)
+    );
+    DataPersistence.insert_game(
+      GameRegistry.create("testedenovo", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999)
+      );
+
+      for (Game g : games) {
+      	
+      System.out.print(g);
+      }
     // GameManage.register_game();
   }
   
