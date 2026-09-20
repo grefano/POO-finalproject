@@ -1,17 +1,21 @@
 package com.meuprojeto.app;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
+
 
 
 // TODO: terminal
@@ -25,7 +29,12 @@ enum GameGenre { two_d, three_d, platformer, fps, triple_a, indie, schmovement, 
 // ? dispositivo (console / pc), versão (ps2 / ps5), marca (nintendo / playstation), sistema operacional (windows / linux)
 enum GamePlatform { console, mobile, pc }
 
-record User(UserId id, String name){}
+record User(UserId id, String name) implements Model<User>{
+  @Override
+  public boolean equivalent(User o){
+    return false;
+  }
+}
 
 class UserRegistry {
   static UserId last_id = new UserId(0);
@@ -54,15 +63,36 @@ class Auth {
 
   }
 }
-record Game( GameId id, String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity ) {}
+interface Model <T extends Model<T>> {
+  // usado pra verificar se um objeto semelhante já foi criado (visto que não pode comparar ids nem cada atributo individualemente)
+  boolean equivalent(T o);
+
+}
+record Game( GameId id, String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity, Float price) implements Model<Game> {
+  @Override
+  public boolean equivalent(Game o) {
+    return o.title.equals(this.title);
+  }
+}
 
 
+// responsavel por gerar id, comparar rows pela PK
+class Registry {
+
+
+  private static final Map<Class<?>, Integer> last_ids = new ConcurrentHashMap<>();
+  
+  public static <T extends Model<T>> T create(Class<T> type, Function<Integer, T> factory) {
+    int id = last_ids.merge(type, 1, Integer::sum) + 1;
+    return factory.apply(id);
+  }
+}
 class GameRegistry {
   static GameId last_id = new GameId(0);
 
-  public static Game create(String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity) {
+  public static Game create(String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity, Float price) {
     GameRegistry.last_id = new GameId(GameRegistry.last_id.id() + 1);
-    return new Game(new GameId(GameRegistry.last_id.id() - 1), title, genre, platform, quantity);
+    return new Game(new GameId(GameRegistry.last_id.id() - 1), title, genre, platform, quantity, price);
   }
 }
 /*
@@ -110,7 +140,7 @@ class DataPersistence {
   static String directory = "data/";
 
   // converte qualquer um dos modelos (game, rent, ...) em uma string no formato que sera armazenado
-  private static <T> String model_object_to_string(T obj) {
+  private static <T extends Model<T>> String model_object_to_string(T obj) {
     Gson gson = new Gson();
     String result = gson.toJson(obj);
     System.out.println(result);
@@ -118,7 +148,7 @@ class DataPersistence {
 
 
   }
-  private static <T> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
+  private static <T extends Model<T>> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
     Gson gson = new Gson();
     try (Stream<String> lines = Files.lines(path_file)){
       return lines.map(line -> gson.fromJson(line, type)).collect(Collectors.toList());
@@ -126,11 +156,16 @@ class DataPersistence {
 
 
   }
-  public static void insert_game(Game game) {
+  private static <T extends Model<T>> Path dir_model(Class<T> type) {
+    String dir = DataPersistence.directory + type.getSimpleName().toLowerCase() + "s/teste.txt";
+    System.out.println("dir: " + dir);
+    Path path = Paths.get(dir);
+    return path;
+  }
+  public static <T extends Model<T>> void insert(T obj) {
     // TODO: falhar se nome já está sendo usado
 
-    Path path = Paths.get(DataPersistence.directory + "games/");
-    Path path_file = Path.of(path.toString(), "teste.txt");
+    Path path_file = dir_model(obj.getClass());
     // try {
     //   Files.createDirectories(Path.of(path.toString(), "teste.txt"));
     // } catch (IOException e){
@@ -142,13 +177,12 @@ class DataPersistence {
 
       Files.createFile(path_file);
     } catch (IOException e) {
-      System.out.println(e);
+      System.out.println("ERROR create file: " + e);
 
     }
-      List<Game> games = get_games_all();
-      for (Game g : games) {
-	if (game.title().equals(g.title())){
-	  System.out.println("equal");
+      List<T> objs = get_row_all((Class<T>) obj.getClass());
+      for (T o : objs) {
+	if (obj.equivalent(o)) {
 	  return;
 
 	}
@@ -156,14 +190,14 @@ class DataPersistence {
       }
 
 
-      String game_str = model_object_to_string(game) + System.lineSeparator();
-      System.out.println(game_str);
+      String obj_str = model_object_to_string(obj) + System.lineSeparator();
+      System.out.println(obj_str);
 
       try {
 
-      Files.write(path_file, game_str.getBytes(), StandardOpenOption.APPEND);
+      Files.write(path_file, obj_str.getBytes(), StandardOpenOption.APPEND);
       } catch (IOException e) {
-	System.out.println(e);
+	System.out.println("ERROR write file: " + e);
       }
 
 
@@ -174,15 +208,16 @@ class DataPersistence {
   // public static GameRegistry get_game_by_name(String name) {
   //
   // }
-  public static List<Game> get_games_all() {
+  public static <T extends Model<T>> List<T> get_row_all(Class<T> type) {
 
-    Path path = Paths.get(DataPersistence.directory + "games/teste.txt");
+    Path path = dir_model(type);
     try {
 
-    List<Game> games = DataPersistence.read_all_rows(path, Game.class);
-    return games;
+    List<T> objs = DataPersistence.read_all_rows(path, type);
+    return objs;
     } catch (IOException e){
-      return new ArrayList<Game>();
+      System.err.println("ERROR read all rows: " + e);
+      return new ArrayList<T>();
     }
     
 
@@ -216,32 +251,27 @@ class App {
     System.out.println("main");
 
 
-    List<Game> games = DataPersistence.get_games_all();
+    List<Game> games = DataPersistence.get_row_all(Game.class);
     for (Game g : games) {
+      System.out.println("game: " + g.toString());
       if (g.id().id() > GameRegistry.last_id.id()){
 	GameRegistry.last_id = g.id();
       }
-    	
-    }
-    
-    DataPersistence.insert_game(
-      GameRegistry.create("celeste", new GameGenre[]{GameGenre.indie, GameGenre.platformer}, new GamePlatform[]{GamePlatform.pc}, 12)
-    );
-    DataPersistence.insert_game(
-      GameRegistry.create("cuphead", new GameGenre[]{GameGenre.indie, GameGenre.bossfight}, new GamePlatform[]{GamePlatform.pc}, 5)
-    );
-    DataPersistence.insert_game(
-      GameRegistry.create("fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999)
-    );
-    DataPersistence.insert_game(
-      GameRegistry.create("testedenovo", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999)
-      );
 
-      for (Game g : games) {
-      	
+    }
+
+    DataPersistence.insert(
+	Registry.create(Game.class, id -> 
+	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
+	  )
+	);
+
+    System.out.println("games:");
+    for (Game g : games) {
+
       System.out.print(g);
-      }
+    }
     // GameManage.register_game();
   }
-  
+
 }
