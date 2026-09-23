@@ -1,8 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.meuprojeto.app.AppTest
 -------------------------------------------------------------------------------
-<<<<<<< HEAD
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s -- in com.meuprojeto.app.AppTest
-=======
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.044 s -- in com.meuprojeto.app.AppTest
->>>>>>> e90b99f (fix filepersistence test with different directory)
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.039 s -- in com.meuprojeto.app.AppTest
