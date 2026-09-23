@@ -12,7 +12,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-// TODO: não escrever no mesmo arquivo usado na pratica
 class FilePersistenceTest {
   @BeforeAll
   static void start(){
@@ -26,6 +25,7 @@ class FilePersistenceTest {
       System.out.println(e);
 
     }
+    // FIXME: repetindo diretorio em 2 lugares (aqui e na classe)
     DataPersistence.directory = "data/";
   }
 

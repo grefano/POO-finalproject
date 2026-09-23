@@ -3,6 +3,7 @@ package com.meuprojeto.app;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,27 +27,40 @@ record UserId(Integer id) {};
 record RentId(Integer id) {};
 
 enum GameGenre { two_d, three_d, platformer, fps, triple_a, indie, schmovement, bossfight }
-// ? dispositivo (console / pc), versão (ps2 / ps5), marca (nintendo / playstation), sistema operacional (windows / linux)
 enum GamePlatform { console, mobile, pc }
 
-record User(UserId id, String name) implements Model<User>{
+record User(UserId id, String name, String cpf) implements Model<User>{
   @Override
   public boolean equivalent(User o){
-    return false;
+    return this.cpf.equals(o.cpf);
+  }
+  @Override
+  public boolean same(User o){
+    return this.id.equals(o.id);
   }
 }
 
 class UserRegistry {
   static UserId last_id = new UserId(0);
 
-  public static User create(String name) {
+  public static User create(String name, String cpf) {
     // FIXME: se eu defino o last_id antes de criar os users ele pode ser maior que o necessario se os users criados ja existirem
     UserRegistry.last_id = new UserId(UserRegistry.last_id.id() + 1);
-    return new User(new UserId(UserRegistry.last_id.id() - 1), name);
+    return new User(new UserId(UserRegistry.last_id.id() - 1), name, cpf);
   }
 }
-class UserProfile { // FIXME: UserProfile vs UserRegistry
+record UserProfile(ArrayList<Rent> rent_story)  implements Model<UserProfile> { // FIXME: UserProfile vs UserRegistry
   // historico de alugueis
+  @Override
+  public boolean equivalent(UserProfile o){
+    return true;
+  }
+
+  @Override
+  public boolean same(UserProfile o) {
+    return true;
+  }
+
 
 }
 
@@ -65,12 +80,19 @@ class Auth {
 interface Model <T extends Model<T>> {
   // usado pra verificar se um objeto semelhante já foi criado (visto que não pode comparar ids nem cada atributo individualemente)
   boolean equivalent(T o);
+  // usado pra verificar se é o objeto que estou procurando (geralmente pelo id)
+  // comparar primary key
+  boolean same(T o);
 
 }
 record Game( GameId id, String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity, Float price) implements Model<Game> {
   @Override
   public boolean equivalent(Game o) {
     return o.title.equals(this.title);
+  }
+  @Override
+  public boolean same(Game o){
+    return o.id.equals(this.id);
   }
 }
 
@@ -94,6 +116,17 @@ class GameRegistry {
     return new Game(new GameId(GameRegistry.last_id.id() - 1), title, genre, platform, quantity, price);
   }
 }
+record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] games) implements Model<Rent> {
+  @Override
+  public boolean equivalent(Rent o) {
+    return this.user.equals(o.user) && this.return_deadline.equals(o.return_deadline) && this.games.equals(o.games) && this.date.equals(o.date);
+  }
+  public boolean same(Rent o) {
+    return this.id.equals(o.id);
+
+  }
+
+}
 /*
 public class GameManage {
   static GameRegistry[] games;
@@ -116,24 +149,20 @@ public class GameManage {
   }
 }
 
-public class Rent {
-  private RentId id;
-  private Date return_deadline;
-  private UserId user;
-  private GameId[] games;
-}
-public class GameRentManage {
-  public static void rent(GameId game, UserId user) {
-    DataPersistence.insert_rent();
-
-  }
-  public static void rent_return(RentId rent) {
-    // TODO: penalidade por atraso
-
-  }
-
-}
 */
+// class GameRentManage {
+//   public static void rent(GameId game, UserId user) {
+//     DataPersistence.insert();
+//
+//   }
+//   public static void rent_return(RentId rent) {
+//     // TODO: penalidade por atraso
+//     Rent rent_whole = DataPersistence.;
+//     if ()
+//
+//   }
+//
+// }
 
 // abstração do banco de dados ou filesystem
 class DataPersistence {
@@ -153,6 +182,18 @@ class DataPersistence {
     try (Stream<String> lines = Files.lines(path_file)){
       return lines.map(line -> gson.fromJson(line, type)).collect(Collectors.toList());
     }
+
+
+  }
+  static <T extends Model<T>> T get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
+    List<T> rows = get_row_all(type);
+    for(T r : rows) {
+      if (pred.apply(r)){
+	return r;
+
+      }
+    }
+    return null;
 
 
   }
@@ -223,18 +264,6 @@ class DataPersistence {
     
 
   }
-  public static void insert_rent() {
-
-  }
-  // public static Rent get_rent(RentId id) {
-  //
-  // }
-  public static void insert_user() {
-
-  }
-  // public static User get_user(UserId id) {
-  //
-  // }
 
 
 
@@ -266,6 +295,24 @@ class App {
 	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
 	  )
 	);
+
+    DataPersistence.insert(
+	Registry.create(Game.class, id -> 
+	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
+	  )
+	);
+
+
+    DataPersistence.insert(
+	Registry.create(User.class, id -> 
+	  new User(new UserId(id), "gabriel", "123456789")
+    ));
+
+    User u = DataPersistence.get_by_attribute(User.class, o -> o.cpf().equals("123456789"));
+    System.out.println("u by cpf" + u);
+
+
+
 
     System.out.println("games:");
     for (Game g : games) {
