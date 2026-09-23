@@ -16,6 +16,8 @@ import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 
 
 // TODO: terminal
@@ -159,7 +161,7 @@ class GameRentManage {
   }
   public static void rent_return(RentId rent) {
     // TODO: penalidade por atraso
-    Rent rent_whole = DataPersistence.get_by_attribute(Rent.class, o -> o.id().equals(rent));
+    Rent rent_whole = DataPersistence.get_by_attribute(Rent.class, o -> o.id().equals(rent)).get();
 
     // Float price_total = get_price(rent_whole);
     // rent_whole.price_paid = ;
@@ -168,7 +170,7 @@ class GameRentManage {
   public static Float get_games_total_price(GameId[] games){
     Float result = 0f;
     for(GameId g : games) {
-      Game game_whole = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(g));
+      Game game_whole = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(g)).get();
       result += game_whole.price();
     }
     return result;
@@ -187,9 +189,22 @@ class GameRentManage {
   }
 
 }
-
 // abstração do banco de dados ou filesystem
 class DataPersistence {
+  static public final class Row<T>{
+    private int line;
+    private T obj;
+
+    private Row(int line, T obj) {
+      this.line = line;
+      this.obj = obj;
+
+    }
+    T get(){
+      return this.obj;
+    }
+
+  }
   static String directory = "data/";
 
   // converte qualquer um dos modelos (game, rent, ...) em uma string no formato que sera armazenado
@@ -209,11 +224,15 @@ class DataPersistence {
 
 
   }
-  static <T extends Model<T>> T get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
+  static <T extends Model<T>> Row<T> get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
     List<T> rows = get_row_all(type);
-    for(T r : rows) {
+    for(int i = 0; i < rows.size(); i++) {
+      T r = rows.get(i);
+      if (r == null){
+	continue;
+      }
       if (pred.apply(r)){
-	return r;
+	return new Row<T>(i, r);
 
       }
     }
@@ -227,8 +246,14 @@ class DataPersistence {
     Path path = Paths.get(dir);
     return path;
   }
-  public static <T extends Model<T>> void update(Class<T> type, T obj) {
-    T row = get_by_attribute(type, o -> o.same(obj));
+  public static <T extends Model<T>> void update(Class<T> type, T newrow) throws IOException {
+    Row<T> row = get_by_attribute(type, o -> o.same(newrow));
+    System.out.println("update row find: " + model_object_to_string(row.get()));
+    List<String> lines = Files.readAllLines(dir_model(type));
+    String obj_str = model_object_to_string(newrow) + System.lineSeparator();
+    lines.set(row.line, obj_str);
+    System.out.println("update lines: " + lines);
+    Files.write(dir_model(type), lines, StandardOpenOption.WRITE);
   }
   public static <T extends Model<T>> void insert(T obj) {
     // TODO: falhar se nome já está sendo usado
@@ -251,7 +276,7 @@ class DataPersistence {
     }
       List<T> objs = get_row_all((Class<T>) obj.getClass());
       for (T o : objs) {
-	if (obj.equivalent(o)) {
+	if (o != null && obj.equivalent(o)) {
 	  return;
 
 	}
@@ -282,7 +307,7 @@ class DataPersistence {
     Path path = dir_model(type);
     try {
 
-    List<T> objs = DataPersistence.read_all_rows(path, type);
+      List<T> objs = DataPersistence.read_all_rows(path, type);
     return objs;
     } catch (IOException e){
       System.err.println("ERROR read all rows: " + e);
@@ -293,6 +318,22 @@ class DataPersistence {
   }
 
 
+public static void delete_directory(Path diretorio) throws IOException {
+    Files.walkFileTree(diretorio, new SimpleFileVisitor<>() {
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            Files.delete(file);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            if (exc != null) throw exc;
+            Files.delete(dir);
+            return FileVisitResult.CONTINUE;
+        }
+    });
+}
 
 }
 class Cli {
@@ -329,7 +370,7 @@ class App {
 
     DataPersistence.insert( eu );
 
-    User u = DataPersistence.get_by_attribute(User.class, o -> o.cpf().equals("123456789"));
+    User u = DataPersistence.get_by_attribute(User.class, o -> o.cpf().equals("123456789")).get();
     System.out.println("u by cpf" + u);
 
 

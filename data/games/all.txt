@@ -1,4 +1,1 @@
-{"id":{"id":2},"title":"celeste","genre":["indie"],"platform":["pc"],"quantity":3,"price":12.7}
 {"id":{"id":2},"title":"fezes","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":999,"price":9999.99}
-{"id":{"id":3},"title":"teste irado aoejfeaoif","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":999,"price":9999.99}
-{"id":{"id":3},"title":"teste 2 irado aoejfeaoif","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":154,"price":59235.99}
