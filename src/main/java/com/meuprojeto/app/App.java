@@ -3,9 +3,7 @@ package com.meuprojeto.app;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -116,7 +114,8 @@ class GameRegistry {
     return new Game(new GameId(GameRegistry.last_id.id() - 1), title, genre, platform, quantity, price);
   }
 }
-record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] games) implements Model<Rent> {
+enum RentState {pending, pending_late, returned, returned_late};
+record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] games, RentState state, Float price_paid) implements Model<Rent> {
   @Override
   public boolean equivalent(Rent o) {
     return this.user.equals(o.user) && this.return_deadline.equals(o.return_deadline) && this.games.equals(o.games) && this.date.equals(o.date);
@@ -150,19 +149,44 @@ public class GameManage {
 }
 
 */
-// class GameRentManage {
-//   public static void rent(GameId game, UserId user) {
-//     DataPersistence.insert();
-//
-//   }
-//   public static void rent_return(RentId rent) {
-//     // TODO: penalidade por atraso
-//     Rent rent_whole = DataPersistence.;
-//     if ()
-//
-//   }
-//
-// }
+class GameRentManage {
+  public static void rent(GameId game, UserId user) {
+    DataPersistence.insert(
+	Registry.create(Rent.class, 
+	  id -> new Rent(new RentId(id), new Date(2026, 9, 21), new Date(2026, 9, 21), user, new GameId[]{game}, RentState.pending, 0f)
+    ));
+
+  }
+  public static void rent_return(RentId rent) {
+    // TODO: penalidade por atraso
+    Rent rent_whole = DataPersistence.get_by_attribute(Rent.class, o -> o.id().equals(rent));
+
+    // Float price_total = get_price(rent_whole);
+    // rent_whole.price_paid = ;
+    // DataPersistence.update(rent, )
+  }
+  public static Float get_games_total_price(GameId[] games){
+    Float result = 0f;
+    for(GameId g : games) {
+      Game game_whole = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(g));
+      result += game_whole.price();
+    }
+    return result;
+
+  }
+  public static Float get_price(Rent rent) {
+    Float result = get_games_total_price(rent.games());
+
+    Date today = new Date();
+    if ( today.after(rent.return_deadline()) ){
+      result *= 1.5f;
+    }
+
+    return result;
+
+  }
+
+}
 
 // abstração do banco de dados ou filesystem
 class DataPersistence {
@@ -202,6 +226,9 @@ class DataPersistence {
     System.out.println("dir: " + dir);
     Path path = Paths.get(dir);
     return path;
+  }
+  public static <T extends Model<T>> void update(Class<T> type, T obj) {
+    T row = get_by_attribute(type, o -> o.same(obj));
   }
   public static <T extends Model<T>> void insert(T obj) {
     // TODO: falhar se nome já está sendo usado
@@ -290,33 +317,29 @@ class App {
 
     }
 
-    DataPersistence.insert(
-	Registry.create(Game.class, id -> 
+    Game g = Registry.create(Game.class, id -> 
 	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
-	  )
-	);
-
-    DataPersistence.insert(
-	Registry.create(Game.class, id -> 
-	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
-	  )
-	);
+	  );
+    DataPersistence.insert( g );
 
 
-    DataPersistence.insert(
-	Registry.create(User.class, id -> 
-	  new User(new UserId(id), "gabriel", "123456789")
-    ));
+
+    User eu = Registry.create(User.class, id -> 
+	  new User(new UserId(id), "gabriel", "123456789"));
+
+    DataPersistence.insert( eu );
 
     User u = DataPersistence.get_by_attribute(User.class, o -> o.cpf().equals("123456789"));
     System.out.println("u by cpf" + u);
 
 
+    GameRentManage.rent(g.id(), u.id());
+
 
 
     System.out.println("games:");
-    for (Game g : games) {
-      System.out.print(g);
+    for (Game game : games) {
+      System.out.print(game);
     }
     // GameManage.register_game();
   }
