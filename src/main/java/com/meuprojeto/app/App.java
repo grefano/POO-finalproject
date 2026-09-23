@@ -20,6 +20,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
 
+// TODO: criar sample do model pra facilitar testes, e alterar so alguns valores
 // TODO: terminal
 
 record GameId(Integer id) {};
@@ -103,6 +104,7 @@ class Registry {
 
   private static final Map<Class<?>, Integer> last_ids = new ConcurrentHashMap<>();
   
+  // FIXME: no momento método só gera o id, como fazer ele ficar responsavel por qualauqer valor automatico?
   public static <T extends Model<T>> T create(Class<T> type, Function<Integer, T> factory) {
     int id = last_ids.merge(type, 1, Integer::sum) + 1;
     return factory.apply(id);
@@ -152,20 +154,38 @@ public class GameManage {
 
 */
 class GameRentManage {
-  public static void rent(GameId game, UserId user) {
+  public static boolean rent(GameId[] games, UserId user) {
+    Game gs = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(game)).get();
+    // FIXME: comparar com a quantidade que quer alugar
+    if (g.quantity() < 0){
+      return false;
+
+    }
     DataPersistence.insert(
 	Registry.create(Rent.class, 
-	  id -> new Rent(new RentId(id), new Date(2026, 9, 21), new Date(2026, 9, 21), user, new GameId[]{game}, RentState.pending, 0f)
+	  id -> new Rent(new RentId(id), new Date(), new Date(), user, games, RentState.pending, 0f)
     ));
+    return true;
 
   }
-  public static void rent_return(RentId rent) {
-    // TODO: penalidade por atraso
+  public static boolean rent_return(RentId rent) {
+    // TODO: verificar se ja foi devolvido
     Rent rent_whole = DataPersistence.get_by_attribute(Rent.class, o -> o.id().equals(rent)).get();
+    if (!rent_whole.state().equals(RentState.pending) && !rent_whole.state().equals(RentState.pending_late)) {
+      return false;
+    }
 
-    // Float price_total = get_price(rent_whole);
-    // rent_whole.price_paid = ;
-    // DataPersistence.update(rent, )
+    Float price_total = get_price(rent_whole);
+    Rent new_rent = new Rent(rent_whole.id(), rent_whole.date(), rent_whole.return_deadline(), rent_whole.user(), rent_whole.games(), rent_whole.state(),  // rs
+	price_total); 
+
+    try {
+      DataPersistence.update(Rent.class, new_rent);
+    } catch (IOException e){
+      System.err.println(e);
+
+    }
+    return true;
   }
   public static Float get_games_total_price(GameId[] games){
     Float result = 0f;
