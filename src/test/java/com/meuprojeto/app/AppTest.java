@@ -20,12 +20,12 @@ class FilePersistenceTest {
   }
   @AfterAll
   static void clean(){
-    // try {
-    // Files.delete(Path.of(DataPersistence.directory));
-    // } catch (IOException e) {
-    //   System.out.println(e);
-    //
-    // }
+    try {
+    Files.delete(Path.of(DataPersistence.directory));
+    } catch (IOException e) {
+      System.out.println(e);
+
+    }
     DataPersistence.directory = "data/";
   }
 
