@@ -19,8 +19,7 @@ import com.google.gson.Gson;
 
 
 // TODO: terminal
-// FIXME: repetição classe XRegistry que define id
-//
+
 record GameId(Integer id) {};
 record UserId(Integer id) {};
 record RentId(Integer id) {};
@@ -135,12 +134,13 @@ public class GameRentManage {
 
 }
 */
+
 // abstração do banco de dados ou filesystem
 class DataPersistence {
   static String directory = "data/";
 
   // converte qualquer um dos modelos (game, rent, ...) em uma string no formato que sera armazenado
-  private static <T extends Model<T>> String model_object_to_string(T obj) {
+  static <T extends Model<T>> String model_object_to_string(T obj) {
     Gson gson = new Gson();
     String result = gson.toJson(obj);
     System.out.println(result);
@@ -148,7 +148,7 @@ class DataPersistence {
 
 
   }
-  private static <T extends Model<T>> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
+  static <T extends Model<T>> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
     Gson gson = new Gson();
     try (Stream<String> lines = Files.lines(path_file)){
       return lines.map(line -> gson.fromJson(line, type)).collect(Collectors.toList());
@@ -156,8 +156,8 @@ class DataPersistence {
 
 
   }
-  private static <T extends Model<T>> Path dir_model(Class<T> type) {
-    String dir = DataPersistence.directory + type.getSimpleName().toLowerCase() + "s/teste.txt";
+  static <T extends Model<T>> Path dir_model(Class<T> type) {
+    String dir = DataPersistence.directory + type.getSimpleName().toLowerCase() + "s/all.txt";
     System.out.println("dir: " + dir);
     Path path = Paths.get(dir);
     return path;
@@ -166,11 +166,12 @@ class DataPersistence {
     // TODO: falhar se nome já está sendo usado
 
     Path path_file = dir_model(obj.getClass());
-    // try {
-    //   Files.createDirectories(Path.of(path.toString(), "teste.txt"));
-    // } catch (IOException e){
-    //   System.out.println(e);
-    // }
+    try {
+      System.out.println("parent: " + path_file.getParent());
+      Files.createDirectories(path_file.getParent());
+    } catch (IOException e){
+      System.out.println(e);
+    }
     try {
 
 
@@ -268,7 +269,6 @@ class App {
 
     System.out.println("games:");
     for (Game g : games) {
-
       System.out.print(g);
     }
     // GameManage.register_game();

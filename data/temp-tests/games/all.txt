@@ -1,0 +1,1 @@
+{"id":{"id":2},"title":"celeste","genre":["indie"],"platform":["pc"],"quantity":3,"price":12.7}
