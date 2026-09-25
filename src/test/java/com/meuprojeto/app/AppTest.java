@@ -13,22 +13,27 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.meuprojeto.app.DataPersistence.Row;
 
-class FilePersistenceBaseTest {
+abstract class FilePersistenceBaseTest {
 
   @AfterAll
   static void end(){
     // FIXME: repetindo diretorio em 2 lugares (aqui e na classe)
     DataPersistence.directory = "data/";
+    System.out.println("set dir: data");
   }
-  @BeforeAll void start(){
-    DataPersistence.directory = "data/test/";
+  @BeforeAll 
+  static void start(){
+    System.out.println("set dir: temp");
+    DataPersistence.directory = "data/temp-tests/";
   }
-  @AfterEach
+  @BeforeEach
   void clean(){
+    Registry.reset_last_ids();
     try {
       DataPersistence.delete_directory(Path.of(DataPersistence.directory));
     } catch (NoSuchFileException e){
@@ -104,8 +109,17 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
 class RegistryTest extends FilePersistenceBaseTest {
   @Test
   void shouldLoadIncId(){
-    Registry.create(Game.class, id -> new Game(new GameId(id), "game1", new GameGenre[]{}, new GamePlatform[]{}, 10, 1f));
-    Registry.create(Game.class, id -> new Game(new GameId(id), "game2", new GameGenre[]{}, new GamePlatform[]{}, 10, 1f));
+    DataPersistence.insert(
+	Registry.create(Game.class, id -> new Game(new GameId(id), "game1", new GameGenre[]{}, new GamePlatform[]{}, 10, 1f))
+	);
+    DataPersistence.insert(
+
+	Registry.create(Game.class, id -> new Game(new GameId(id), "game2", new GameGenre[]{}, new GamePlatform[]{}, 10, 1f))
+	);
+
+
+    System.out.println("TEST shouldLoadIncId: " + DataPersistence.get_row_all(Game.class));
+
 
     Integer new_last_id = Registry.load_inc_id(Game.class, o -> o.id().id());
 
@@ -113,7 +127,7 @@ class RegistryTest extends FilePersistenceBaseTest {
     assertTrue(new_last_id == 2);
   }
 }
-class GameRentManageTest {
+class GameRentManageTest extends FilePersistenceBaseTest {
 
   @Test 
   public void shouldGetTotalPrice(){
@@ -122,7 +136,7 @@ class GameRentManageTest {
   }
 }
 // requisitos do trabalho
-public class AppTest {
+public class AppTest extends FilePersistenceBaseTest {
 
     @Test
     public void shouldOnlyRentWhenAvailable() {

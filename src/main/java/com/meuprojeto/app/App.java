@@ -98,7 +98,7 @@ class Registry {
   
   // FIXME: no momento método só gera o id, como fazer ele ficar responsavel por qualauqer valor automatico?
   public static <T extends Model<T>> T create(Class<T> type, Function<Integer, T> factory) {
-    int id = last_ids.merge(type, 1, Integer::sum) + 1;
+    int id = last_ids.merge(type, 1, Integer::sum) - 1;
     return factory.apply(id);
   }
   
@@ -116,6 +116,10 @@ class Registry {
       }
     }
     return last_ids.get(type);
+  }
+
+  static void reset_last_ids(){
+    last_ids.replaceAll((k, v) -> 0);
   }
 }
 
@@ -260,10 +264,12 @@ class DataPersistence {
 	continue;
       }
       if (pred.apply(r)){
+	System.out.println("get by attribute: " + r.toString());
 	return new Row<T>(i, r);
 
       }
     }
+    System.out.println("get by attr NULL: " + type.getSimpleName());
     return null;
 
 
@@ -290,14 +296,16 @@ class DataPersistence {
     try {
       System.out.println("parent: " + path_file.getParent());
       Files.createDirectories(path_file.getParent());
+    } catch (FileAlreadyExistsException e){
     } catch (IOException e){
-      System.out.println(e);
+      System.out.println("ERROR create dir " + e);
     }
     try {
 
 
 
       Files.createFile(path_file);
+    } catch (FileAlreadyExistsException e){
     } catch (IOException e) {
       System.out.println("ERROR create file: " + e);
 
@@ -377,9 +385,10 @@ class App {
     System.out.println("main");
 
     // TODO: evitar repetição e rodar pra cada classe manualmente
-    Registry.load_inc_id(Game.class, o -> o.id().id());
-    Registry.load_inc_id(Rent.class, o -> o.id().id());
-    Registry.load_inc_id(User.class, o -> o.id().id());
+    // TODO: descomentar (comentei pq ainda n funciona)
+    // Registry.load_inc_id(Game.class, o -> o.id().id());
+    // Registry.load_inc_id(Rent.class, o -> o.id().id());
+    // Registry.load_inc_id(User.class, o -> o.id().id());
 
     Game g = Registry.create(Game.class, id -> 
 	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
