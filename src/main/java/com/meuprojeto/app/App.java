@@ -41,15 +41,6 @@ record User(UserId id, String name, String cpf) implements Model<User>{
   }
 }
 
-class UserRegistry {
-  static UserId last_id = new UserId(0);
-
-  public static User create(String name, String cpf) {
-    // FIXME: se eu defino o last_id antes de criar os users ele pode ser maior que o necessario se os users criados ja existirem
-    UserRegistry.last_id = new UserId(UserRegistry.last_id.id() + 1);
-    return new User(new UserId(UserRegistry.last_id.id() - 1), name, cpf);
-  }
-}
 record UserProfile(ArrayList<Rent> rent_story)  implements Model<UserProfile> { // FIXME: UserProfile vs UserRegistry
   // historico de alugueis
   @Override
@@ -109,15 +100,23 @@ class Registry {
     int id = last_ids.merge(type, 1, Integer::sum) + 1;
     return factory.apply(id);
   }
-}
-class GameRegistry {
-  static GameId last_id = new GameId(0);
+  
 
-  public static Game create(String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity, Float price) {
-    GameRegistry.last_id = new GameId(GameRegistry.last_id.id() + 1);
-    return new Game(new GameId(GameRegistry.last_id.id() - 1), title, genre, platform, quantity, price);
+  // atualiza o last_id do model de acordo com as rows dos txt
+  // pq precisa começar a gerar os ids a partir do maior id anterior
+  public static <T extends Model<T>> void load_inc_id(Class<T> type, Function<T, Integer> get_pk){
+
+
+    List<T> objs = DataPersistence.get_row_all(type);
+    for (T o : objs) {
+
+      if (get_pk.apply(o) > last_ids.get(type)){
+	Registry.last_ids.put(type, get_pk.apply(o));
+      }
+    }
   }
 }
+
 enum RentState {pending, pending_late, returned, returned_late};
 record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] games, RentState state, Float price_paid) implements Model<Rent> {
   @Override
@@ -368,15 +367,10 @@ class App {
   public static void main(String[] args) {
     System.out.println("main");
 
-
-    List<Game> games = DataPersistence.get_row_all(Game.class);
-    for (Game g : games) {
-      System.out.println("game: " + g.toString());
-      if (g.id().id() > GameRegistry.last_id.id()){
-	GameRegistry.last_id = g.id();
-      }
-
-    }
+    // TODO: evitar repetição e rodar pra cada classe manualmente
+    Registry.load_inc_id(Game.class, o -> o.id().id());
+    Registry.load_inc_id(Rent.class, o -> o.id().id());
+    Registry.load_inc_id(User.class, o -> o.id().id());
 
     Game g = Registry.create(Game.class, id -> 
 	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
@@ -394,7 +388,7 @@ class App {
     System.out.println("u by cpf" + u);
 
 
-    GameRentManage.rent(g.id(), u.id());
+    GameRentManage.rent(new GameId[]{ g.id() }, u.id());
 
 
 
