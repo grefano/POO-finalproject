@@ -156,12 +156,15 @@ class GameRentManage {
     if (amount_games_rented.get() + amount_games > 3) {
       return false;
     }
+    HashMap<GameId, Game> whole_games = new HashMap<>();
 
     for(Map.Entry<GameId, Integer> entry : games.entrySet() ){
       GameId g = entry.getKey();
       Integer qtd = entry.getValue();
 
       Game gg = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g)).get();
+      whole_games.put(g, gg);
+
       if (gg == null){
 	throw new Error("gameId doesnt correspond to an existing game");
       }
@@ -170,10 +173,19 @@ class GameRentManage {
       }
 
     }
+    // update games quantity
+    for(Map.Entry<GameId, Integer> entry : games.entrySet() ){
+      Game game = whole_games.get(entry.getKey());
+      Game newgame =new Game(game.id(), game.title(), game.genre(), game.platform(), game.quantity() - entry.getValue(), game.price());
+
+      DataPersistence.update(Game.class, newgame);
+    }
     DataPersistence.insert(
 	Registry.create(Rent.class, 
 	  id -> new Rent(new RentId(id), new Date(), new Date(), user, games.keySet().toArray(new GameId[0]), RentState.pending, 0f)
     ));
+
+
     return true;
 
   }
@@ -189,11 +201,16 @@ class GameRentManage {
     Rent new_rent = new Rent(rent_whole.id(), rent_whole.date(), rent_whole.return_deadline(), rent_whole.user(), rent_whole.games(), RentState.returned,  // rs
 	price_total); 
 
-    try {
-      DataPersistence.update(Rent.class, new_rent);
-    } catch (IOException e){
-      System.err.println("ERROR rent return update " + e);
+    DataPersistence.update(Rent.class, new_rent);
 
+
+    // update games quantity
+    for(GameId gid : rent_whole.games() ){
+      Game game = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(gid)).get();
+
+      Game newgame =new Game(game.id(), game.title(), game.genre(), game.platform(), game.quantity() + 1, game.price()); // FIXME: adicionar quantidade real q foi alugado
+
+      DataPersistence.update(Game.class, newgame);
     }
     return true;
   }
@@ -295,14 +312,20 @@ class DataPersistence {
     Path path = Paths.get(dir);
     return path;
   }
-  public static <T extends Model<T>> void update(Class<T> type, T newrow) throws IOException {
+  public static <T extends Model<T>> void update(Class<T> type, T newrow){
     Row<T> row = get_first_by_attribute(type, o -> o.same(newrow));
     System.out.println("update row find: " + model_object_to_string(row.get()));
-    List<String> lines = Files.readAllLines(dir_model(type));
-    String obj_str = model_object_to_string(newrow) + System.lineSeparator();
-    lines.set(row.line, obj_str);
-    System.out.println("update lines: " + lines);
-    Files.write(dir_model(type), lines, StandardOpenOption.WRITE);
+    try {
+      List<String> lines = Files.readAllLines(dir_model(type));
+
+      String obj_str = model_object_to_string(newrow) + System.lineSeparator();
+      lines.set(row.line, obj_str);
+      System.out.println("update lines: " + lines);
+      Files.write(dir_model(type), lines, StandardOpenOption.WRITE);
+    } catch (IOException e) {
+      System.err.println("ERROR " + e);
+
+    }
   }
   public static <T extends Model<T>> void insert(T obj) {
     // TODO: falhar se nome já está sendo usado

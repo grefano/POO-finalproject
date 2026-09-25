@@ -3,3 +3,5 @@
 {"id":{"id":7},"title":"game2","genre":["indie"],"platform":["pc"],"quantity":5,"price":100.0}
 {"id":{"id":8},"title":"game3","genre":["indie"],"platform":["pc"],"quantity":5,"price":100.0}
 {"id":{"id":9},"title":"game4","genre":["indie"],"platform":["pc"],"quantity":5,"price":100.0}
+{"id":{"id":0},"title":"fezes","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":998,"price":9999.99}
+

@@ -77,13 +77,8 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
 
     Game g_new = new Game(g.id(), "teste update", g.genre(), g.platform(), g.quantity(), g.price());
 
-    try {
 
-      DataPersistence.update(Game.class, g_new);
-    } catch (IOException e) {
-      System.out.println("ERROR update row: " + e);
-      assertTrue(false);
-    }
+    DataPersistence.update(Game.class, g_new);
 
     Row<Game> row = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g.id()));
     System.out.println("row update: " + DataPersistence.model_object_to_string(row.get()));
@@ -174,6 +169,7 @@ public class AppTest extends FilePersistenceBaseTest {
 
     @Test
     public void shouldIncreaseQuantityWhenRentReturn() {
+      System.out.println("TEST should increase quantity when rent return");
       DataPersistence.insert(Registry.create(User.class, 
 	id -> new User(new UserId(id), "alguem", "123")));
 
@@ -189,6 +185,8 @@ public class AppTest extends FilePersistenceBaseTest {
       Game gafter = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
 
 
+      System.out.println("END TEST should increase quantity when rent return");
+      System.out.println("start " + gstart.quantity() + " end " + gafter.quantity());
       assertTrue(gafter.quantity() > gstart.quantity());
     }
 
@@ -215,6 +213,7 @@ public class AppTest extends FilePersistenceBaseTest {
 
     @Test 
     void alreadyReturnedRentCantBeAgain() {
+      System.out.println("TEST already returned rent cant be again");
       
       DataPersistence.insert(Registry.create(User.class, 
 	id -> new User(new UserId(id), "alguem", "123")));
@@ -224,7 +223,13 @@ public class AppTest extends FilePersistenceBaseTest {
 
       // Hashtable<GameId, Integer> games_rent = new Hashtable<GameId, Integer>();
       // games_rent.put(new GameId(0), 1);
-      GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
+
+      System.out.println("TEST already rent: ");
+      boolean couldrent = GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
+      System.out.println("could rent " + couldrent);
+      
+      System.out.println(" ADJLAJ: " + DataPersistence.get_row_all(Rent.class));
+
       boolean couldreturnfirst = GameRentManage.rent_return(new RentId(0));
       System.out.println("first return: " + 
 	  DataPersistence.model_object_to_string(DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().id() == 0).get())
