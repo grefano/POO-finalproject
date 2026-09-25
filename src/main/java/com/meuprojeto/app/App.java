@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
+import com.meuprojeto.app.DataPersistence.Row;
 
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -144,7 +145,17 @@ record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] ga
 class GameRentManage {
   public static boolean rent(Map<GameId, Integer> games, UserId user) {
     // TODO: verificar se total de jogos alugados é maior q 3
-    DataPersistence.get_first_by_attribute(Rent.class, o -> o.user().equals(user));
+    List<Row<Rent>> user_rents = DataPersistence.get_by_attribute(Rent.class, o -> o.user().equals(user));
+    AtomicReference<Integer> amount_games_rented = new AtomicReference<>(0);
+    user_rents.forEach((o) -> amount_games_rented.set(amount_games_rented.get() + o.get().games().length));
+
+    int amount_games = games.values().stream().mapToInt(Integer::intValue).sum();
+
+
+    System.out.println("rent amount games: " + (amount_games_rented.get() + amount_games));
+    if (amount_games_rented.get() + amount_games > 3) {
+      return false;
+    }
 
     for(Map.Entry<GameId, Integer> entry : games.entrySet() ){
       GameId g = entry.getKey();
