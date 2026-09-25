@@ -3,10 +3,15 @@ package com.meuprojeto.app;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.FileVisitResult;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -23,6 +28,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 // TODO: criar sample do model pra facilitar testes, e alterar so alguns valores
 // TODO: terminal
+// TODO: search game by X AND Y
 
 record GameId(Integer id) {};
 record UserId(Integer id) {};
@@ -135,36 +141,16 @@ record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] ga
   }
 
 }
-/*
-public class GameManage {
-  static GameRegistry[] games;
-
-  // FIXME: >1 genre, >1 platform, etc
-  public static void register_game(String title, GameGenre genre, GamePlatform platform) { 
-    GameManage.games = [];
-
-  }
-
-  // TODO: search by X AND Y
-  public static GameRegistry[] games_by_title(String title) {
-
-  }
-  public static GameRegistry[] games_by_platform() {
-
-  }
-  public static GameRegistry[] games_by_genre() {
-
-  }
-}
-
-*/
 class GameRentManage {
   public static boolean rent(Map<GameId, Integer> games, UserId user) {
+    // TODO: verificar se total de jogos alugados é maior q 3
+    DataPersistence.get_first_by_attribute(Rent.class, o -> o.user().equals(user));
+
     for(Map.Entry<GameId, Integer> entry : games.entrySet() ){
       GameId g = entry.getKey();
       Integer qtd = entry.getValue();
 
-      Game gg = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(g)).get();
+      Game gg = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g)).get();
       if (gg == null){
 	throw new Error("gameId doesnt correspond to an existing game");
       }
@@ -182,19 +168,20 @@ class GameRentManage {
   }
   public static boolean rent_return(RentId rent) {
     // TODO: verificar se ja foi devolvido
-    Rent rent_whole = DataPersistence.get_by_attribute(Rent.class, o -> o.id().equals(rent)).get();
+    Rent rent_whole = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().equals(rent)).get();
+    System.out.println(rent_whole);
     if (!rent_whole.state().equals(RentState.pending) && !rent_whole.state().equals(RentState.pending_late)) {
       return false;
     }
 
     Float price_total = get_price(rent_whole);
-    Rent new_rent = new Rent(rent_whole.id(), rent_whole.date(), rent_whole.return_deadline(), rent_whole.user(), rent_whole.games(), rent_whole.state(),  // rs
+    Rent new_rent = new Rent(rent_whole.id(), rent_whole.date(), rent_whole.return_deadline(), rent_whole.user(), rent_whole.games(), RentState.returned,  // rs
 	price_total); 
 
     try {
       DataPersistence.update(Rent.class, new_rent);
     } catch (IOException e){
-      System.err.println(e);
+      System.err.println("ERROR rent return update " + e);
 
     }
     return true;
@@ -202,7 +189,7 @@ class GameRentManage {
   public static Float get_games_total_price(GameId[] games){
     Float result = 0f;
     for(GameId g : games) {
-      Game game_whole = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(g)).get();
+      Game game_whole = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g)).get();
       result += game_whole.price();
     }
     return result;
@@ -256,22 +243,39 @@ class DataPersistence {
 
 
   }
-  static <T extends Model<T>> Row<T> get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
+  static <T extends Model<T>> void search_by_attribute(Class<T> type, Function<T, Boolean> pred, BiFunction<T, Integer, Void> act) {
+
     List<T> rows = get_row_all(type);
+
     for(int i = 0; i < rows.size(); i++) {
       T r = rows.get(i);
       if (r == null){
 	continue;
       }
       if (pred.apply(r)){
-	System.out.println("get by attribute: " + r.toString());
-	return new Row<T>(i, r);
+	act.apply(r, i);
 
       }
     }
     System.out.println("get by attr NULL: " + type.getSimpleName());
-    return null;
+  } 
+  static <T extends Model<T>> List<Row<T>> get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
+    List<Row<T>> result = new ArrayList<>();
+    search_by_attribute(type, pred, (r, i) -> {
+      result.add(new Row<T>(i.intValue(), r));
+      return null; // ????? compilador burro
+    });
+    return result;
 
+  } 
+  static <T extends Model<T>> Row<T> get_first_by_attribute(Class<T> type, Function<T, Boolean> pred) {
+    AtomicReference<Row<T>> result = new AtomicReference<>();
+    search_by_attribute(type, pred, (r, i) -> {
+      result.set(new Row<T>(i.intValue(), r));
+      return null;
+    });
+
+    return result.get();
 
   }
   static <T extends Model<T>> Path dir_model(Class<T> type) {
@@ -281,7 +285,7 @@ class DataPersistence {
     return path;
   }
   public static <T extends Model<T>> void update(Class<T> type, T newrow) throws IOException {
-    Row<T> row = get_by_attribute(type, o -> o.same(newrow));
+    Row<T> row = get_first_by_attribute(type, o -> o.same(newrow));
     System.out.println("update row find: " + model_object_to_string(row.get()));
     List<String> lines = Files.readAllLines(dir_model(type));
     String obj_str = model_object_to_string(newrow) + System.lineSeparator();
@@ -332,12 +336,6 @@ class DataPersistence {
 
 
   }
-  // public static GameRegistry get_game(GameId id) {
-  //
-  // }
-  // public static GameRegistry get_game_by_name(String name) {
-  //
-  // }
   public static <T extends Model<T>> List<T> get_row_all(Class<T> type) {
 
     Path path = dir_model(type);
@@ -354,22 +352,22 @@ class DataPersistence {
   }
 
 
-public static void delete_directory(Path diretorio) throws IOException {
+  public static void delete_directory(Path diretorio) throws IOException {
     Files.walkFileTree(diretorio, new SimpleFileVisitor<>() {
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            Files.delete(file);
-            return FileVisitResult.CONTINUE;
-        }
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+	Files.delete(file);
+	return FileVisitResult.CONTINUE;
+      }
 
-        @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-            if (exc != null) throw exc;
-            Files.delete(dir);
-            return FileVisitResult.CONTINUE;
-        }
+      @Override
+      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+	if (exc != null) throw exc;
+	Files.delete(dir);
+	return FileVisitResult.CONTINUE;
+      }
     });
-}
+  }
 
 }
 class Cli {
@@ -402,7 +400,7 @@ class App {
 
     DataPersistence.insert( eu );
 
-    User u = DataPersistence.get_by_attribute(User.class, o -> o.cpf().equals("123456789")).get();
+    User u = DataPersistence.get_first_by_attribute(User.class, o -> o.cpf().equals("123456789")).get();
     System.out.println("u by cpf" + u);
 
 
