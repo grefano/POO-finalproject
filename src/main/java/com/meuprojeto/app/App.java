@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -104,7 +105,7 @@ class Registry {
 
   // atualiza o last_id do model de acordo com as rows dos txt
   // pq precisa começar a gerar os ids a partir do maior id anterior
-  public static <T extends Model<T>> void load_inc_id(Class<T> type, Function<T, Integer> get_pk){
+  public static <T extends Model<T>> Integer load_inc_id(Class<T> type, Function<T, Integer> get_pk){
 
 
     List<T> objs = DataPersistence.get_row_all(type);
@@ -114,6 +115,7 @@ class Registry {
 	Registry.last_ids.put(type, get_pk.apply(o));
       }
     }
+    return last_ids.get(type);
   }
 }
 
@@ -153,16 +155,23 @@ public class GameManage {
 
 */
 class GameRentManage {
-  public static boolean rent(GameId[] games, UserId user) {
-    Game gs = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(game)).get();
-    // FIXME: comparar com a quantidade que quer alugar
-    if (g.quantity() < 0){
-      return false;
+  public static boolean rent(Map<GameId, Integer> games, UserId user) {
+    for(Map.Entry<GameId, Integer> entry : games.entrySet() ){
+      GameId g = entry.getKey();
+      Integer qtd = entry.getValue();
+
+      Game gg = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(g)).get();
+      if (gg == null){
+	throw new Error("gameId doesnt correspond to an existing game");
+      }
+      if (gg.quantity() - qtd < 0){
+	return false;
+      }
 
     }
     DataPersistence.insert(
 	Registry.create(Rent.class, 
-	  id -> new Rent(new RentId(id), new Date(), new Date(), user, games, RentState.pending, 0f)
+	  id -> new Rent(new RentId(id), new Date(), new Date(), user, games.keySet().toArray(new GameId[0]), RentState.pending, 0f)
     ));
     return true;
 
@@ -388,14 +397,12 @@ class App {
     System.out.println("u by cpf" + u);
 
 
-    GameRentManage.rent(new GameId[]{ g.id() }, u.id());
+    HashMap<GameId, Integer> games_rent = new HashMap<GameId, Integer>();
+    games_rent.put(g.id(), 1);
+    GameRentManage.rent(games_rent, u.id());
 
 
 
-    System.out.println("games:");
-    for (Game game : games) {
-      System.out.print(game);
-    }
     // GameManage.register_game();
   }
 

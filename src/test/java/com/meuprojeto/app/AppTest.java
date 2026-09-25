@@ -6,19 +6,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.meuprojeto.app.DataPersistence.Row;
 
-class FilePersistenceTest {
+class FilePersistenceBaseTest {
+
   @AfterAll
   static void end(){
     // FIXME: repetindo diretorio em 2 lugares (aqui e na classe)
     DataPersistence.directory = "data/";
+  }
+  @BeforeAll void start(){
+    DataPersistence.directory = "data/test/";
   }
   @AfterEach
   void clean(){
@@ -31,6 +38,8 @@ class FilePersistenceTest {
 
     }
   }
+}
+class FilePersistenceTest extends FilePersistenceBaseTest {
 
 
   @Test
@@ -91,6 +100,19 @@ class FilePersistenceTest {
 
 
 }
+
+class RegistryTest extends FilePersistenceBaseTest {
+  @Test
+  void shouldLoadIncId(){
+    Registry.create(Game.class, id -> new Game(new GameId(id), "game1", new GameGenre[]{}, new GamePlatform[]{}, 10, 1f));
+    Registry.create(Game.class, id -> new Game(new GameId(id), "game2", new GameGenre[]{}, new GamePlatform[]{}, 10, 1f));
+
+    Integer new_last_id = Registry.load_inc_id(Game.class, o -> o.id().id());
+
+    System.out.println("TEST new last id:" + new_last_id);
+    assertTrue(new_last_id == 2);
+  }
+}
 class GameRentManageTest {
 
   @Test 
@@ -114,8 +136,8 @@ public class AppTest {
 	id -> new Game(new GameId(id), "game unavailable", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 0, 100f)));
 
 
-      boolean could1 = GameRentManage.rent(new GameId(0), new UserId(0));
-      boolean couldunavailable = GameRentManage.rent(new GameId(1), new UserId(0));
+      boolean could1 = GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
+      boolean couldunavailable = GameRentManage.rent(Map.of(new GameId(1), 1), new UserId(0));
       assertTrue(could1);
       assertFalse(couldunavailable);
     }
@@ -130,11 +152,11 @@ public class AppTest {
 	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
 
 
-      Game gstart = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(0)).get();
+      Game gstart = DataPersistence.get_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
 
-      GameRentManage.rent(new GameId(0), new UserId(0));
+      GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
 
-      Game gafter = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(0)).get();
+      Game gafter = DataPersistence.get_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
 
 
       assertTrue(gafter.quantity() < gstart.quantity());
@@ -149,13 +171,13 @@ public class AppTest {
 	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
 
 
-      GameRentManage.rent(new GameId(0), new UserId(0));
-      Game gstart = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(0)).get();
+      GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
+      Game gstart = DataPersistence.get_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
 
 
       GameRentManage.rent_return(new RentId(0));
 
-      Game gafter = DataPersistence.get_by_attribute(Game.class, o -> o.id().equals(0)).get();
+      Game gafter = DataPersistence.get_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
 
 
       assertTrue(gafter.quantity() > gstart.quantity());
@@ -180,9 +202,8 @@ public class AppTest {
 	id -> new Game(new GameId(id), "game4", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
 
 
-      boolean couldrentless = GameRentManage.rent(new GameId[]{new GameId(0), new GameId(1), new GameId(2)}, new UserId(0));
-      boolean couldrentmore = GameRentManage.rent(new GameId[]{new GameId(0), new GameId(1), new GameId(2), new GameId(3)}, new UserId(0));
-
+      boolean couldrentless = GameRentManage.rent(Map.of(new GameId(0), 1, new GameId(1), 1, new GameId(2), 1, new GameId(3), 1), new UserId(0));
+      boolean couldrentmore = GameRentManage.rent(Map.of(new GameId(0), 1, new GameId(1), 1, new GameId(2), 1), new UserId(0));
 
       assertTrue(couldrentless);
       assertFalse(couldrentmore);
@@ -202,8 +223,9 @@ public class AppTest {
 	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
 
 
-      GameRentManage.rent(new GameId[]{new GameId(0)}, new UserId(0));
-
+      // Hashtable<GameId, Integer> games_rent = new Hashtable<GameId, Integer>();
+      // games_rent.put(new GameId(0), 1);
+      GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
       boolean couldreturnfirst = GameRentManage.rent_return(new RentId(0));
 
       boolean couldreturnsecond = GameRentManage.rent_return(new RentId(0));
