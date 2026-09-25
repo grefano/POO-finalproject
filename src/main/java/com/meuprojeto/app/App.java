@@ -27,7 +27,6 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
 
-// TODO: criar sample do model pra facilitar testes, e alterar so alguns valores
 // TODO: terminal
 // TODO: search game by X AND Y
 
@@ -144,7 +143,6 @@ record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] ga
 }
 class GameRentManage {
   public static boolean rent(Map<GameId, Integer> games, UserId user) {
-    // TODO: verificar se total de jogos alugados é maior q 3
     List<Row<Rent>> user_rents = DataPersistence.get_by_attribute(Rent.class, o -> o.user().equals(user));
     AtomicReference<Integer> amount_games_rented = new AtomicReference<>(0);
     user_rents.forEach((o) -> amount_games_rented.set(amount_games_rented.get() + o.get().games().length));
@@ -190,7 +188,6 @@ class GameRentManage {
 
   }
   public static boolean rent_return(RentId rent) {
-    // TODO: verificar se ja foi devolvido
     Rent rent_whole = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().equals(rent)).get();
     System.out.println(rent_whole);
     if (!rent_whole.state().equals(RentState.pending) && !rent_whole.state().equals(RentState.pending_late)) {
@@ -328,8 +325,6 @@ class DataPersistence {
     }
   }
   public static <T extends Model<T>> void insert(T obj) {
-    // TODO: falhar se nome já está sendo usado
-
     Path path_file = dir_model(obj.getClass());
     try {
       System.out.println("parent: " + path_file.getParent());
@@ -418,9 +413,9 @@ class App {
 
     // TODO: evitar repetição e rodar pra cada classe manualmente
     // TODO: descomentar (comentei pq ainda n funciona)
-    // Registry.load_inc_id(Game.class, o -> o.id().id());
-    // Registry.load_inc_id(Rent.class, o -> o.id().id());
-    // Registry.load_inc_id(User.class, o -> o.id().id());
+    Registry.load_inc_id(Game.class, o -> o.id().id());
+    Registry.load_inc_id(Rent.class, o -> o.id().id());
+    Registry.load_inc_id(User.class, o -> o.id().id());
 
     Game g = Registry.create(Game.class, id -> 
 	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
