@@ -1,2 +1,2 @@
-{"id":{"id":0},"title":"fezes","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":998,"price":9999.99}
+{"id":{"id":0},"title":"fezes","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":997,"price":9999.99}
 

@@ -115,13 +115,15 @@ class Registry {
 
 
     List<T> objs = DataPersistence.get_row_all(type);
+    System.out.println("objs: " + objs);
     for (T o : objs) {
+      System.out.println(type + " 119: " + last_ids.get(type));
 
-      if (get_pk.apply(o) > last_ids.get(type)){
+      if (last_ids.get(type) != null &&  get_pk.apply(o) > last_ids.get(type)){
 	Registry.last_ids.put(type, get_pk.apply(o));
       }
     }
-    return last_ids.get(type);
+    return last_ids.get(type) == null ? 0 : last_ids.get(type) ;
   }
 
   static void reset_last_ids(){
@@ -262,7 +264,7 @@ class DataPersistence {
   }
   static <T extends Model<T>> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
     Gson gson = new Gson();
-    try (Stream<String> lines = Files.lines(path_file)){
+    try (Stream<String> lines = Files.lines(path_file).filter(s -> s != "")){
       return lines.map(line -> gson.fromJson(line, type)).collect(Collectors.toList());
     }
 
