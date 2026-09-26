@@ -6,7 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.meuprojeto.app.DataPersistence.Row;
+import com.sun.source.tree.AssertTree;
 
 class Util {
   public static List<Game> insertGames(int amount, int amount_in_stock) {
@@ -25,6 +29,18 @@ class Util {
     for (int i = 0; i < amount; i++){
       final int index = i;
       Game o = Registry.create(Game.class, id -> new Game(new GameId(id), "game"+index, new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, amount_in_stock, 100f));
+      DataPersistence.insert(o);
+      result.add(o);
+    }
+    return result;
+  }
+
+  public static List<User> insertUsers(int amount) {
+
+    List<User> result = new ArrayList<>();
+    for (int i = 0; i < amount; i++){
+      final int index = i;
+      User o = Registry.create(User.class, id -> new User(new UserId(id), "user"+index, "12345689"));
       DataPersistence.insert(o);
       result.add(o);
     }
@@ -270,5 +286,33 @@ public class AppTest extends FilePersistenceBaseTest {
 
 
     }
+
+
+
+
+
+  @Test
+  void shouldApplyLateReturnPenalty(){
+    Game g = Util.insertGames(1, 5).get(0);
+    User u = Util.insertUsers(1).get(0);
+
+    
+    Date ontem = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
+    GameRentManage.rent(Map.of(g.id(), 1), u.id(), ontem);
+
+    Rent r = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().id() == 0).get();
+
+    GameRentManage.rent_return(r.id());
+
+    Rent rr = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().id() == 0).get();
+
+
+    Float games_total_price = GameRentManage.get_games_total_price(r.games());
+    assertTrue(r != null);
+    assertTrue(r.return_deadline().before(new Date()));
+    assertTrue(rr.price_paid() > games_total_price);
+
+
+  }
 
 }

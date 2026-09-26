@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.FileVisitResult;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -144,7 +146,12 @@ record Rent(RentId id, Date date, Date return_deadline, UserId user, GameId[] ga
 
 }
 class GameRentManage {
-  public static boolean rent(Map<GameId, Integer> games, UserId user) {
+  public static boolean rent(Map<GameId, Integer> games, UserId user){
+    Date nextweek = Date.from(Instant.now().plus(7, ChronoUnit.DAYS));
+
+    return rent(games, user, nextweek);
+  }
+  public static boolean rent(Map<GameId, Integer> games, UserId user, Date deadline) {
     List<Row<Rent>> user_rents = DataPersistence.get_by_attribute(Rent.class, o -> o.user().equals(user));
     AtomicReference<Integer> amount_games_rented = new AtomicReference<>(0);
     user_rents.forEach((o) -> amount_games_rented.set(amount_games_rented.get() + o.get().games().length));
@@ -182,7 +189,7 @@ class GameRentManage {
     }
     DataPersistence.insert(
 	Registry.create(Rent.class, 
-	  id -> new Rent(new RentId(id), new Date(), new Date(), user, games.keySet().toArray(new GameId[0]), RentState.pending, 0f)
+	  id -> new Rent(new RentId(id), new Date(), deadline, user, games.keySet().toArray(new GameId[0]), RentState.pending, 0f)
     ));
 
 
@@ -191,7 +198,6 @@ class GameRentManage {
   }
   public static boolean rent_return(RentId rent) {
     Rent rent_whole = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().equals(rent)).get();
-    System.out.println(rent_whole);
     if (!rent_whole.state().equals(RentState.pending) && !rent_whole.state().equals(RentState.pending_late)) {
       return false;
     }
