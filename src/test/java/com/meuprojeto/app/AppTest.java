@@ -13,15 +13,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.crypto.Data;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.meuprojeto.app.DataPersistence.Row;
-import com.sun.source.tree.AssertTree;
+import com.meuprojeto.app.DataPersistence.Query;
 
 class Util {
   public static List<Game> insertGames(int amount, int amount_in_stock) {
@@ -84,7 +82,7 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
     for (int i = 0; i < 5; i++){
       DataPersistence.insert(game); 
     }
-    List<Game> objs = DataPersistence.get_row_all(Game.class);
+    List<Game> objs = Query.get_all(Game.class);
     System.out.println("objs" + objs.size());
     assertTrue(objs.size() == 1);
 
@@ -100,9 +98,9 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
 
     DataPersistence.update(Game.class, g_new);
 
-    Row<Game> row = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g.id()));
-    System.out.println("row update: " + DataPersistence.model_object_to_string(row.get()));
-    assertTrue(row.get().title().equals("teste update"));
+    Game row = Query.get_first_by_attribute(Game.class, o -> o.id().equals(g.id()));
+    System.out.println("row update: " + DataPersistence.model_object_to_string(row));
+    assertTrue(row.title().equals("teste update"));
   }
   @Test
   public void shouldRemove() {
@@ -112,7 +110,7 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
     DataPersistence.remove(Game.class, o -> o.id().equals(g.id()));
     
 
-    Row<Game> gafter = DataPersistence.get_first_by_attribute(Game.class, o -> {
+    Game gafter = Query.get_first_by_attribute(Game.class, o -> {
       System.out.println("get removed o " + o);
 
       return o.id().equals(g.id());
@@ -124,9 +122,9 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
   public void incrementId() {
     Util.insertGames(3, 5);
     
-    Game g1 = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(0))).get();
-    Game g2 = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(1))).get();
-    Game g3 = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(2))).get();
+    Game g1 = Query.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(0)));
+    Game g2 = Query.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(1)));
+    Game g3 = Query.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(2)));
 
 
     assertTrue(g1.title().equals("game0"));
@@ -145,13 +143,22 @@ class RegistryTest extends FilePersistenceBaseTest {
     Util.insertGames(2, 10);
 
 
-    System.out.println("TEST shouldLoadIncId: " + DataPersistence.get_row_all(Game.class));
+    System.out.println("TEST shouldLoadIncId: " + Query.get_all(Game.class));
 
 
     Integer new_last_id = Registry.load_inc_id(Game.class, o -> o.id().id());
 
     System.out.println("TEST new last id:" + new_last_id);
     assertTrue(new_last_id == 2);
+  }
+}
+class QueryTest extends FilePersistenceBaseTest {
+  @Test
+  public void getFirstByAttribute() {
+    Util.insertGames(1, 5);
+    Game g = Query.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(0)));
+    assertTrue(g.id().equals(new GameId(0)));
+
   }
 }
 class GameRentManageTest extends FilePersistenceBaseTest {
@@ -193,12 +200,17 @@ public class AppTest extends FilePersistenceBaseTest {
 	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
 
 
-      Game gstart = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
+      Game gstart = Query.get_first_by_attribute(Game.class, o -> {
+      System.out.println("search game " + DataPersistence.model_object_to_string(o));
+      return o.id().id().equals(0);
+    });
+    System.out.println("g start " + gstart.id());
 
       GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
 
-      Game gafter = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
+      Game gafter = Query.get_first_by_attribute(Game.class, o -> o.id().id().equals(0));
 
+    System.out.println("g end " + gafter.id());
 
       assertTrue(gafter.quantity() < gstart.quantity());
     }
@@ -213,12 +225,12 @@ public class AppTest extends FilePersistenceBaseTest {
 
 
       GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
-      Game gstart = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
+      Game gstart = Query.get_first_by_attribute(Game.class, o -> o.id().id().equals(0));
 
 
       GameRentManage.rent_return(new RentId(0));
 
-      Game gafter = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().id().equals(0)).get();
+      Game gafter = Query.get_first_by_attribute(Game.class, o -> o.id().id().equals(0));
 
 
       System.out.println("END TEST should increase quantity when rent return");
@@ -260,23 +272,20 @@ public class AppTest extends FilePersistenceBaseTest {
       Util.insertGames(1, 5);
 
 
-      // Hashtable<GameId, Integer> games_rent = new Hashtable<GameId, Integer>();
-      // games_rent.put(new GameId(0), 1);
-
       System.out.println("TEST already rent: ");
       boolean couldrent = GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
       System.out.println("could rent " + couldrent);
       
-      System.out.println(" ADJLAJ: " + DataPersistence.get_row_all(Rent.class));
+      System.out.println(" ADJLAJ: " + Query.get_all(Rent.class));
 
       boolean couldreturnfirst = GameRentManage.rent_return(new RentId(0));
       System.out.println("first return: " + 
-	  DataPersistence.model_object_to_string(DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().id() == 0).get())
+	  DataPersistence.model_object_to_string(Query.get_first_by_attribute(Rent.class, o -> o.id().id() == 0))
 	  );
 
       boolean couldreturnsecond = GameRentManage.rent_return(new RentId(0));
       System.out.println("second return " + 
-	  DataPersistence.model_object_to_string(DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().id() == 0).get())
+	  DataPersistence.model_object_to_string(Query.get_first_by_attribute(Rent.class, o -> o.id().id() == 0))
 	  );
 
 
@@ -300,11 +309,11 @@ public class AppTest extends FilePersistenceBaseTest {
     Date ontem = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
     GameRentManage.rent(Map.of(g.id(), 1), u.id(), ontem);
 
-    Rent r = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().id() == 0).get();
+    Rent r = Query.get_first_by_attribute(Rent.class, o -> o.id().id() == 0);
 
     GameRentManage.rent_return(r.id());
 
-    Rent rr = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().id() == 0).get();
+    Rent rr = Query.get_first_by_attribute(Rent.class, o -> o.id().id() == 0);
 
 
     Float games_total_price = GameRentManage.get_games_total_price(r.games());

@@ -22,7 +22,10 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.xml.crypto.Data;
+
 import com.google.gson.Gson;
+import com.meuprojeto.app.DataPersistence.Query;
 import com.meuprojeto.app.DataPersistence.Row;
 
 import java.nio.file.*;
@@ -116,7 +119,7 @@ class Registry {
   public static <T extends Model<T>> Integer load_inc_id(Class<T> type, Function<T, Integer> get_pk){
 
 
-    List<T> objs = DataPersistence.get_row_all(type);
+    List<T> objs = Query.get_all(type);
     System.out.println("objs: " + objs);
     for (T o : objs) {
       System.out.println(type + " 119: " + last_ids.get(type));
@@ -152,9 +155,9 @@ class GameRentManage {
     return rent(games, user, nextweek);
   }
   public static boolean rent(Map<GameId, Integer> games, UserId user, Date deadline) {
-    List<Row<Rent>> user_rents = DataPersistence.get_by_attribute(Rent.class, o -> o.user().equals(user));
+    List<Rent> user_rents = Query.get_by_attribute(Rent.class, o -> o.user().equals(user));
     AtomicReference<Integer> amount_games_rented = new AtomicReference<>(0);
-    user_rents.forEach((o) -> amount_games_rented.set(amount_games_rented.get() + o.get().games().length));
+    user_rents.forEach((o) -> amount_games_rented.set(amount_games_rented.get() + o.games().length));
 
     int amount_games = games.values().stream().mapToInt(Integer::intValue).sum();
 
@@ -169,7 +172,8 @@ class GameRentManage {
       GameId g = entry.getKey();
       Integer qtd = entry.getValue();
 
-      Game gg = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g)).get();
+      System.out.println("search same as " + g.id());
+      Game gg = Query.get_first_by_attribute(Game.class, o -> o.id().equals(g));
       whole_games.put(g, gg);
 
       if (gg == null){
@@ -197,7 +201,7 @@ class GameRentManage {
 
   }
   public static boolean rent_return(RentId rent) {
-    Rent rent_whole = DataPersistence.get_first_by_attribute(Rent.class, o -> o.id().equals(rent)).get();
+    Rent rent_whole = Query.get_first_by_attribute(Rent.class, o -> o.id().equals(rent));
     if (!rent_whole.state().equals(RentState.pending) && !rent_whole.state().equals(RentState.pending_late)) {
       return false;
     }
@@ -211,7 +215,7 @@ class GameRentManage {
 
     // update games quantity
     for(GameId gid : rent_whole.games() ){
-      Game game = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(gid)).get();
+      Game game = Query.get_first_by_attribute(Game.class, o -> o.id().equals(gid));
 
       Game newgame =new Game(game.id(), game.title(), game.genre(), game.platform(), game.quantity() + 1, game.price()); // FIXME: adicionar quantidade real q foi alugado
 
@@ -222,7 +226,7 @@ class GameRentManage {
   public static Float get_games_total_price(GameId[] games){
     Float result = 0f;
     for(GameId g : games) {
-      Game game_whole = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g)).get();
+      Game game_whole = Query.get_first_by_attribute(Game.class, o -> o.id().equals(g));
       result += game_whole.price();
     }
     return result;
@@ -293,48 +297,6 @@ class DataPersistence {
     return model_object_to_string(os).get(0);
 
   }
-  static <T extends Model<T>> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
-    try (Stream<String> lines = Files.lines(path_file)){
-      return string_to_model_object(lines.collect(Collectors.toList()), type);
-    }
-
-
-  }
-  static <T extends Model<T>> void search_by_attribute(Class<T> type, Function<T, Boolean> pred, BiFunction<T, Integer, Void> act) {
-
-    List<T> rows = get_row_all(type);
-
-    for(int i = 0; i < rows.size(); i++) {
-      T r = rows.get(i);
-      if (r == null){
-	continue;
-      }
-      if (pred.apply(r)){
-	System.out.println("get by attr " + r );
-	act.apply(r, i);
-
-      }
-    }
-  } 
-  static <T extends Model<T>> List<Row<T>> get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
-    List<Row<T>> result = new ArrayList<>();
-    search_by_attribute(type, pred, (r, i) -> {
-      result.add(new Row<T>(i.intValue(), r));
-      return null; // ????? compilador burro
-    });
-    return result;
-
-  } 
-  static <T extends Model<T>> Row<T> get_first_by_attribute(Class<T> type, Function<T, Boolean> pred) {
-    AtomicReference<Row<T>> result = new AtomicReference<>();
-    search_by_attribute(type, pred, (r, i) -> {
-      result.set(new Row<T>(i.intValue(), r));
-      return null;
-    });
-
-    return result.get();
-
-  }
   static <T extends Model<T>> Path dir_model(Class<T> type) {
     String dir = DataPersistence.directory + type.getSimpleName().toLowerCase() + "s/all.txt";
     System.out.println("dir: " + dir);
@@ -342,7 +304,7 @@ class DataPersistence {
     return path;
   }
   public static <T extends Model<T>> void update(Class<T> type, T newrow){
-    Row<T> row = get_first_by_attribute(type, o -> o.same(newrow));
+    Row<T> row = Query.search_first_by_attribute(type, o -> o.get().same(newrow));
     System.out.println("update row find: " + model_object_to_string(row.get()));
     try {
       List<String> lines = Files.readAllLines(dir_model(type));
@@ -375,7 +337,7 @@ class DataPersistence {
       System.out.println("ERROR create file: " + e);
 
     }
-      List<T> objs = get_row_all((Class<T>) obj.getClass());
+      List<T> objs = Query.get_all((Class<T>) obj.getClass());
       for (T o : objs) {
 	if (o != null && obj.equivalent(o)) {
 	  return;
@@ -401,7 +363,7 @@ class DataPersistence {
   public static <T extends Model<T>> void remove(Class<T> type, Function<T, Boolean> pred) {
 
     Path path_file = dir_model(type);
-    Row<T> row = get_first_by_attribute(type, pred);
+    Row<T> row = Query.search_first_by_attribute(type, r -> pred.apply(r.get()));
     System.out.println("remove row " + row.get());
     try {
       List<String> lines = Files.readAllLines(dir_model(type));
@@ -414,16 +376,20 @@ Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNC
 
   }
 
-  public static <T extends Model<T>> List<T> get_row_all(Class<T> type) {
+  public static <T extends Model<T>> List<Row<T>> get_row_all(Class<T> type) {
 
     Path path = dir_model(type);
     try {
 
-      List<T> objs = DataPersistence.read_all_rows(path, type);
-    return objs;
+      List<Row<T>> objs = new ArrayList<>();
+      List<String> lines = Files.lines(path).collect(Collectors.toList());
+      for (int i = 0; i < lines.size(); i++) {
+	objs.add(new Row<T>(i, string_to_model_object(lines.get(i), type) ));
+      }
+      return objs;
     } catch (IOException e){
       System.err.println("ERROR read all rows: " + e);
-      return new ArrayList<T>();
+      return new ArrayList<Row<T>>();
     }
     
 
@@ -447,12 +413,97 @@ Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNC
     });
   }
 
+
+  public class Query {
+
+    static <T extends Model<T>> void search_by_attribute(List<Row<T>> rows, Function<Row<T>, Boolean> pred, Function<Row<T>, Boolean> act) {
+      // search(Game.class, o -> o.id < 1000, (o, i) -> )
+      for(int i = 0; i < rows.size(); i++) {
+	Row<T> r = rows.get(i);
+	if (r == null || r.get() == null){
+	  continue;
+	}
+	if (pred.apply(r)){
+	  Boolean end = act.apply(r);
+	  if (end){
+	    return;
+	  }
+
+	}
+      }
+    }
+    static <T extends Model<T>> void search_by_attribute(Class<T> type, Function<Row<T>, Boolean> pred, Function<Row<T>, Boolean> act) {
+
+      List<Row<T>> rows = get_row_all(type);
+      search_by_attribute(rows, pred, act);
+
+    } 
+    static <T extends Model<T>> Row<T> search_first_by_attribute(Class<T> type, Function<Row<T>, Boolean> pred) {
+
+      AtomicReference<Row<T>> result = new AtomicReference<>();
+      search_by_attribute(type, pred, o -> {
+	result.set(o);
+	return true;
+      });
+      return result.get();
+
+
+    }
+    static <T extends Model<T>> List<T> get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
+      List<T> result = new ArrayList<>();
+      search_by_attribute(type, o -> {
+	return pred.apply(o.get());
+      }, r -> {
+	  result.add(r.get());
+	  return false; 
+	});
+      return result;
+
+    } 
+    static <T extends Model<T>> T get_first_by_attribute(Class<T> type, Function<T, Boolean> pred) {
+      Row<T> result = search_first_by_attribute(type, o -> {
+	System.out.println("search first " + model_object_to_string(o.get()));
+	return pred.apply(o.get());
+      });
+
+      return result == null ? null : result.get();
+
+    }
+    static <T extends Model<T>> List<T> get_all(Class<T> type) {
+      List<T> result = new ArrayList<>();
+      List<Row<T>> rows = get_row_all(type);
+      rows.forEach(r -> result.add(r.get()));
+      return result;
+    }
+  }
 }
 class Cli {
 
 }
 // não deve se responsabilizar por detalhes de implementação do terminal ou da gui
 class UI {
+  static void register(String nome, String cpf) {
+    // verificar se usuario já existe
+    User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals(cpf));
+    if (u != null){
+      login(u);
+      return;
+    }
+    // TODO: validar cpf
+    if (cpf.length() != 6) {
+      return;
+    }
+    Registry.create(User.class, id -> new User(new UserId(id), nome, cpf));
+  }
+  static void login(String cpf){
+    User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals(cpf));
+    login(u);
+
+  }
+  static void login(User u){
+
+
+  }
 
 }
 class App {
@@ -464,6 +515,8 @@ class App {
     Registry.load_inc_id(Game.class, o -> o.id().id());
     Registry.load_inc_id(Rent.class, o -> o.id().id());
     Registry.load_inc_id(User.class, o -> o.id().id());
+
+    UI.login("123456789");
 
     Game g = Registry.create(Game.class, id -> 
 	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
@@ -477,7 +530,7 @@ class App {
 
     DataPersistence.insert( eu );
 
-    User u = DataPersistence.get_first_by_attribute(User.class, o -> o.cpf().equals("123456789")).get();
+    User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals("123456789"));
     System.out.println("u by cpf" + u);
 
 
