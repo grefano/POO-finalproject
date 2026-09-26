@@ -253,19 +253,43 @@ class DataPersistence {
   }
   static String directory = "data/";
 
-  // converte qualquer um dos modelos (game, rent, ...) em uma string no formato que sera armazenado
-  static <T extends Model<T>> String model_object_to_string(T obj) {
+  static <T extends Model<T>> List<T> string_to_model_object(List<String> str, Class<T> type) {
+    List<T> result = new ArrayList<>(); 
     Gson gson = new Gson();
-    String result = gson.toJson(obj);
+    for (String line : str) {
+      T o = gson.fromJson(line, type);
+      result.add(o);
+    }
+    return result;
+
+  }
+  // converte qualquer um dos modelos (game, rent, ...) em uma string no formato que sera armazenado
+  static <T extends Model<T>> List<String> model_object_to_string(List<T> os) {
+    Gson gson = new Gson();
+    List<String> result = new ArrayList<>();
+    for (T o : os) {
+      String str = gson.toJson(o);
+      result.add(str);
+    }
     System.out.println(result);
     return result;
 
 
   }
+  static <T extends Model<T>> T string_to_model_object(String str, Class<T> type) {
+    List<String> ss = new ArrayList<>();
+    ss.add(str);
+    return string_to_model_object(ss, type).get(0);
+  }
+  static <T extends Model<T>> String model_object_to_string(T o){
+    List<T> os = new ArrayList<T>();
+    os.add(o);
+    return model_object_to_string(os).get(0);
+
+  }
   static <T extends Model<T>> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
-    Gson gson = new Gson();
     try (Stream<String> lines = Files.lines(path_file).filter(s -> s != "")){
-      return lines.map(line -> gson.fromJson(line, type)).collect(Collectors.toList());
+      return string_to_model_object(lines.collect(Collectors.toList()), type);
     }
 
 
@@ -414,7 +438,6 @@ class App {
     System.out.println("main");
 
     // TODO: evitar repetição e rodar pra cada classe manualmente
-    // TODO: descomentar (comentei pq ainda n funciona)
     Registry.load_inc_id(Game.class, o -> o.id().id());
     Registry.load_inc_id(Rent.class, o -> o.id().id());
     Registry.load_inc_id(User.class, o -> o.id().id());

@@ -193,18 +193,21 @@ public class AppTest extends FilePersistenceBaseTest {
     @Test
     public void max3GamesRentPerUser() {
       System.out.println("TEST max 3 games rent per user");
-      // TODO: tem q considerar jogos em outros rents também
+
       DataPersistence.insert(Registry.create(User.class, 
 	id -> new User(new UserId(id), "alguem", "123")));
 
       Util.insertGames(4, 5);
 
-      boolean couldrentless = GameRentManage.rent(Map.of(new GameId(0), 1, new GameId(1), 1, new GameId(2), 1), new UserId(0));
+      
       boolean couldrentmore = GameRentManage.rent(Map.of(new GameId(0), 1, new GameId(1), 1, new GameId(2), 1, new GameId(3), 1), new UserId(0));
+      boolean couldrentless = GameRentManage.rent(Map.of(new GameId(0), 1, new GameId(1), 1, new GameId(2), 1), new UserId(0));
+      boolean couldrentmoreadd = GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0)); // 3 + 1
 
       System.out.println("END TEST max 3 games rent per user");
-      assertTrue(couldrentless);
       assertFalse(couldrentmore);
+      assertTrue(couldrentless);
+      assertFalse(couldrentmoreadd);
 
     }
 
