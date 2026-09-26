@@ -288,7 +288,7 @@ class DataPersistence {
 
   }
   static <T extends Model<T>> List<T> read_all_rows(Path path_file, Class<T> type) throws IOException{
-    try (Stream<String> lines = Files.lines(path_file).filter(s -> s != "")){
+    try (Stream<String> lines = Files.lines(path_file)){
       return string_to_model_object(lines.collect(Collectors.toList()), type);
     }
 
@@ -304,11 +304,11 @@ class DataPersistence {
 	continue;
       }
       if (pred.apply(r)){
+	System.out.println("get by attr " + r );
 	act.apply(r, i);
 
       }
     }
-    System.out.println("get by attr NULL: " + type.getSimpleName());
   } 
   static <T extends Model<T>> List<Row<T>> get_by_attribute(Class<T> type, Function<T, Boolean> pred) {
     List<Row<T>> result = new ArrayList<>();
@@ -379,6 +379,7 @@ class DataPersistence {
       }
 
 
+
       String obj_str = model_object_to_string(obj) + System.lineSeparator();
       System.out.println(obj_str);
 
@@ -391,6 +392,22 @@ class DataPersistence {
 
 
   }
+  public static <T extends Model<T>> void remove(Class<T> type, Function<T, Boolean> pred) {
+
+    Path path_file = dir_model(type);
+    Row<T> row = get_first_by_attribute(type, pred);
+    System.out.println("remove row " + row.get());
+    try {
+      List<String> lines = Files.readAllLines(dir_model(type));
+      System.out.println(row.line + " remove lines " + lines);
+      lines.set(row.line, "");
+Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+    } catch (IOException e) {
+      System.out.println("ERROR remove " + e);
+    }
+
+  }
+
   public static <T extends Model<T>> List<T> get_row_all(Class<T> type) {
 
     Path path = dir_model(type);

@@ -6,9 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.crypto.Data;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,13 +20,15 @@ import org.junit.jupiter.api.Test;
 import com.meuprojeto.app.DataPersistence.Row;
 
 class Util {
-  public static void insertGames(int amount, int amount_in_stock) {
+  public static List<Game> insertGames(int amount, int amount_in_stock) {
+    List<Game> result = new ArrayList<>();
     for (int i = 0; i < amount; i++){
       final int index = i;
-      DataPersistence.insert(
-	  Registry.create(Game.class, id -> new Game(new GameId(id), "game"+index, new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, amount_in_stock, 100f))
-	  );
+      Game o = Registry.create(Game.class, id -> new Game(new GameId(id), "game"+index, new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, amount_in_stock, 100f));
+      DataPersistence.insert(o);
+      result.add(o);
     }
+    return result;
   }
 }
 abstract class FilePersistenceBaseTest {
@@ -83,6 +87,22 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
     Row<Game> row = DataPersistence.get_first_by_attribute(Game.class, o -> o.id().equals(g.id()));
     System.out.println("row update: " + DataPersistence.model_object_to_string(row.get()));
     assertTrue(row.get().title().equals("teste update"));
+  }
+  @Test
+  public void shouldRemove() {
+    System.out.println("TEST should remove");
+    Game g = Util.insertGames(1, 5).get(0);
+
+    DataPersistence.remove(Game.class, o -> o.id().equals(g.id()));
+    
+
+    Row<Game> gafter = DataPersistence.get_first_by_attribute(Game.class, o -> {
+      System.out.println("get removed o " + o);
+
+      return o.id().equals(g.id());
+    });
+    System.out.println("g after " + gafter);
+    assertTrue(gafter == null);
   }
   @Test 
   public void incrementId() {
