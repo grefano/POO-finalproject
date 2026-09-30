@@ -17,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.stream.Collectors;
@@ -132,7 +133,10 @@ class Registry {
     return new Game(new GameId(get_id(Game.class)), title, genre, platform, quantity, price);
   }
   public static Rent create_rent(UserId user, Date deadline, GameId[] games){
-    return new Rent(new RentId(get_id(Rent.class)), new Date(), deadline, user, games, RentState.pending, 0f);
+    return create_rent(user, deadline, new Date(), games);
+  }
+  public static Rent create_rent(UserId user, Date date, Date deadline, GameId[] games){
+    return new Rent(new RentId(get_id(Rent.class)), date, deadline, user, games, RentState.pending, 0f);
   }
   public static User create_user(String name, String cpf){
     return new User(new UserId(get_id(User.class)), name, cpf, new UserPermissions[]{});
@@ -515,6 +519,7 @@ class PermissionException extends Exception {
 }
 // não deve se responsabilizar por detalhes de implementação do terminal ou da gui
 class UI {
+  static private HashMap<GameId, Integer> rent_games;
   class Permission {
     static private UserId token = null;
 
@@ -547,14 +552,26 @@ class UI {
 
   }
 
+  static void start_rent(){
+    if (rent_games == null){
+      rent_games = new HashMap<>();
+    } else {
+      rent_games.clear();
+
+    }
+  }
+  static void add_game_to_rent(GameId game, Integer amount){
+    rent_games.put(game, amount);
+  }
+  static void finish_rent(){
+    GameRentManage.rent(rent_games, Permission.get_user_id());
+  }
+
   static List<Rent> get_rent_history() {
     UserId id = Permission.get_user_id();
     List<Rent> rents = Query.get_by_attribute(Rent.class, o -> o.user().equals(id));
 
-    // assert ordem de criação
-    for(int i = 1; i < rents.size(); i++){
-      assert(rents.get(i).date().after(rents.get(i+1).date()));
-    }
+    Collections.sort(rents, (a, b) -> a.date().compareTo(b.date())); 
 
     return rents;
 
