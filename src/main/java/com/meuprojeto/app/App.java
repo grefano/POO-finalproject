@@ -29,7 +29,6 @@ import com.meuprojeto.app.DataPersistence.Query;
 import com.meuprojeto.app.DataPersistence.Row;
 import com.sun.source.tree.AssertTree;
 
-import jdk.jfr.events.ExceptionStatisticsEvent;
 
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -112,12 +111,35 @@ class Registry {
 
   private static final Map<Class<?>, Integer> last_ids = new ConcurrentHashMap<>();
   
-  // FIXME: no momento método só gera o id, como fazer ele ficar responsavel por qualauqer valor automatico?
-  public static <T extends Model<T>> T create(Class<T> type, Function<Integer, T> factory) {
+  // FIXME: no momento método só gera o id, como fazer ele ficar responsavel por qualauqer valor automatico? 
+  // public static <T extends Model<T>> T create(Class<T> type, Function<Integer, T> factory) {
+  //   int id = last_ids.merge(type, 1, Integer::sum) - 1;
+  //   return factory.apply(id);
+  // }
+
+  private static <T extends Model<T>> Integer get_id(Class<T> type){
     int id = last_ids.merge(type, 1, Integer::sum) - 1;
-    return factory.apply(id);
+    System.err.println("get id for " + type + " = " + id);
+    return id;
   }
-  
+  // if a object is created now, what would be its id?
+  public static <T extends Model<T>> Integer get_inc_id(Class<T> type){
+    Integer id = last_ids.get(type);
+    return id == null ? 0 : id;
+  }
+
+  public static Game create_game(String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity, Float price){
+    return new Game(new GameId(get_id(Game.class)), title, genre, platform, quantity, price);
+  }
+  public static Rent create_rent(UserId user, Date deadline, GameId[] games){
+    return new Rent(new RentId(get_id(Rent.class)), new Date(), deadline, user, games, RentState.pending, 0f);
+  }
+  public static User create_user(String name, String cpf){
+    return new User(new UserId(get_id(User.class)), name, cpf, new UserPermissions[]{});
+  }
+  public static User create_user(String name, String cpf, UserPermissions[] perms){
+    return new User(new UserId(get_id(User.class)), name, cpf, perms);
+  }
 
   // atualiza o last_id do model de acordo com as rows dos txt
   // pq precisa começar a gerar os ids a partir do maior id anterior
@@ -197,9 +219,8 @@ class GameRentManage {
       DataPersistence.update(Game.class, newgame);
     }
     DataPersistence.insert(
-	Registry.create(Rent.class, 
-	  id -> new Rent(new RentId(id), new Date(), deadline, user, games.keySet().toArray(new GameId[0]), RentState.pending, 0f)
-    ));
+	Registry.create_rent(user, deadline, games.keySet().toArray(new GameId[0]))
+    );
 
 
     return true;
@@ -345,6 +366,7 @@ class DataPersistence {
       List<T> objs = Query.get_all((Class<T>) obj.getClass());
       for (T o : objs) {
 	if (o != null && obj.equivalent(o)) {
+	System.out.println("equivalent get bent" + model_object_to_string(obj) + " " + model_object_to_string(o));
 	  return;
 
 	}
@@ -516,12 +538,12 @@ class UI {
 
   }
 
-  static void insert_game(Function<Integer, Game> factory) throws PermissionException {
+  static void insert_game(Game game) throws PermissionException {
     if (!Permission.can_insert_persistence()){
       throw new PermissionException("não tem permissão pra inserir objetos");
     }
 
-    DataPersistence.insert(Registry.create(Game.class, factory));
+    DataPersistence.insert(game);
 
   }
 
@@ -550,7 +572,9 @@ class UI {
     if (cpf.length() != 9) {
       throw new Exception("cpf inválido");
     }
-    Registry.create(User.class, id -> new User(new UserId(id), nome, cpf, new UserPermissions[] {}));
+    DataPersistence.insert(
+     Registry.create_user(nome, cpf)
+    );
   }
   static void login(String cpf, String password) throws Exception {
     User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals(cpf));
@@ -593,15 +617,15 @@ class App {
       System.err.println("ERROR login " + e);
     }
 
-    Game g = Registry.create(Game.class, id -> 
-	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
-	  );
+    // Game g = Registry.create(Game.class, id -> 
+    //   new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
+    // );
+    Game g = Registry.create_game("fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f);
     DataPersistence.insert( g );
 
 
 
-    User eu = Registry.create(User.class, id -> 
-	  new User(new UserId(id), "gabriel", "123456789", new UserPermissions[]{} ));
+    User eu = Registry.create_user("gabriel", "123456789", new UserPermissions[]{} );
 
     DataPersistence.insert( eu );
 

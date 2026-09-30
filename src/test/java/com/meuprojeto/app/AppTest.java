@@ -21,14 +21,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.meuprojeto.app.DataPersistence.Query;
+import com.meuprojeto.app.DataPersistence.Row;
 
 class Util {
   public static List<Game> createGames(int amount, int amount_in_stock) {
     List<Game> result = new ArrayList<>();
 
+    int last_id = Registry.get_inc_id(Game.class);
     for (int i = 0; i < amount; i++){
-      final int index = i;
-      Game o = Registry.create(Game.class, id -> new Game(new GameId(id), "game"+index, new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, amount_in_stock, 100f));
+      final int index = last_id + i;
+
+      Game o = Registry.create_game("game"+index, new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, amount_in_stock, 100f);
       result.add(o);
     }
 
@@ -36,9 +39,9 @@ class Util {
   }
   public static List<Game> insertGames(int amount, int amount_in_stock) {
     List<Game> result = createGames(amount, amount_in_stock);
+    System.out.println("created games: " + result);
     for (int i = 0; i < amount; i++){
       DataPersistence.insert(result.get(i));
-      result.add(result.get(i));
     }
     return result;
   }
@@ -48,7 +51,7 @@ class Util {
     List<User> result = new ArrayList<>();
     for (int i = 0; i < amount; i++){
       final int index = i;
-      User o = Registry.create(User.class, id -> new User(new UserId(id), "user"+index, "12345689", new UserPermissions[]{}));
+      User o = Registry.create_user("user"+index, "12345689");
       DataPersistence.insert(o);
       result.add(o);
     }
@@ -86,9 +89,8 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
 
   @Test
   public void shouldNotDuplicateInsert(){
-    Game game = Registry.create(Game.class, id -> 
-      new Game(new GameId(id), "teste", new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, 3, 12.70f)
-    );
+    Game game = Registry.create_game("teste", new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, 3, 12.70f);
+
     for (int i = 0; i < 5; i++){
       DataPersistence.insert(game); 
     }
@@ -100,7 +102,7 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
 
   @Test
   public void shouldUpdate(){
-    Game g = Registry.create(Game.class, id -> new Game(new GameId(id), "teste", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 1, 1f));
+    Game g = Registry.create_game("teste", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 1, 1f);
     DataPersistence.insert(g);
 
     Game g_new = new Game(g.id(), "teste update", g.genre(), g.platform(), g.quantity(), g.price());
@@ -129,12 +131,15 @@ class FilePersistenceTest extends FilePersistenceBaseTest {
     assertTrue(gafter == null);
   }
   @Test 
+
   public void incrementId() {
+    System.out.println("TEST incrementId");
     Util.insertGames(3, 5);
     
     Game g1 = Query.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(0)));
     Game g2 = Query.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(1)));
     Game g3 = Query.get_first_by_attribute(Game.class, o -> o.id().equals(new GameId(2)));
+    System.out.println(DataPersistence.model_object_to_string(g1) + " " + DataPersistence.model_object_to_string(g2) + " " + DataPersistence.model_object_to_string(g3));
 
 
     assertTrue(g1.title().equals("game0"));
@@ -184,7 +189,7 @@ class AuthTest extends FilePersistenceBaseTest {
   public void guestCantInsert() {
 
     Game g = Util.createGames(1, 5).get(0);
-    assertThrows(PermissionException.class, () -> UI.insert_game(_id -> g));
+    assertThrows(PermissionException.class, () -> UI.insert_game(g));
   }
 
   @Test
@@ -195,7 +200,7 @@ class AuthTest extends FilePersistenceBaseTest {
       assertTrue(false);
     }
     Game g = Util.createGames(1, 5).get(0);
-    assertThrows(PermissionException.class, () -> UI.insert_game(_id -> g));
+    assertThrows(PermissionException.class, () -> UI.insert_game(g));
 
   }
 
@@ -204,8 +209,7 @@ class AuthTest extends FilePersistenceBaseTest {
 
     try {
       DataPersistence.insert(
-      Registry.create(User.class, id -> new User(new UserId(id), "admin", "123456789", new UserPermissions[]{UserPermissions.adm}))
-
+	Registry.create_user("admin", "123456789", new UserPermissions[]{UserPermissions.adm})
       );
       UI.login("123456789", "1234");
     } catch (Exception e){
@@ -213,7 +217,7 @@ class AuthTest extends FilePersistenceBaseTest {
     }
     Game g = Util.createGames(1, 5).get(0);
     try {
-      UI.insert_game(_id -> g);
+      UI.insert_game(g);
     } catch (PermissionException e){
       assertTrue(false);
     }
@@ -226,14 +230,20 @@ public class AppTest extends FilePersistenceBaseTest {
 
     @Test
     public void shouldOnlyRentWhenAvailable() {
+    System.err.println("TEST should only rent when available");
       Util.insertUsers(1);
 
-      DataPersistence.insert(Registry.create(Game.class,
-	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
+      Util.insertGames(1, 5);
+      System.out.println("INSERT GAMES");
+    // FIXME: não tá criando o jogo por algum motivo
+      Util.insertGames(1, 0);
+      System.out.println("INSERTED GAMES");
+      
 
-      DataPersistence.insert(Registry.create(Game.class,
-	id -> new Game(new GameId(id), "game unavailable", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 0, 100f)));
+      for(Row<Game> g : DataPersistence.get_row_all(Game.class)){
 
+    System.err.println("abc games: " + DataPersistence.model_object_to_string(g.get()));
+    }
 
       boolean could1 = GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
       boolean couldunavailable = GameRentManage.rent(Map.of(new GameId(1), 1), new UserId(0));
@@ -246,8 +256,9 @@ public class AppTest extends FilePersistenceBaseTest {
     public void shouldDecreaseQuantityWhenRent() {
       Util.insertUsers(1);
 
-      DataPersistence.insert(Registry.create(Game.class,
-	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
+      DataPersistence.insert(
+	Registry.create_game("game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)
+      );
 
 
       Game gstart = Query.get_first_by_attribute(Game.class, o -> {
