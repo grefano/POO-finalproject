@@ -27,6 +27,9 @@ import javax.xml.crypto.Data;
 import com.google.gson.Gson;
 import com.meuprojeto.app.DataPersistence.Query;
 import com.meuprojeto.app.DataPersistence.Row;
+import com.sun.source.tree.AssertTree;
+
+import jdk.jfr.events.ExceptionStatisticsEvent;
 
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -42,7 +45,9 @@ record RentId(Integer id) {};
 enum GameGenre { two_d, three_d, platformer, fps, triple_a, indie, schmovement, bossfight }
 enum GamePlatform { console, mobile, pc }
 
-record User(UserId id, String name, String cpf) implements Model<User>{
+enum UserPermissions { adm } 
+
+record User(UserId id, String name, String cpf, UserPermissions[] perms) implements Model<User>{
   @Override
   public boolean equivalent(User o){
     return this.cpf.equals(o.cpf);
@@ -480,9 +485,61 @@ Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNC
 class Cli {
 
 }
+class PermissionException extends Exception {
+  public PermissionException() {}
+  public PermissionException(String msg) {
+    super(msg);
+  }
+}
 // não deve se responsabilizar por detalhes de implementação do terminal ou da gui
 class UI {
-  static void register(String nome, String cpf) {
+  class Permission {
+    static private UserId token = null;
+
+    // gerar token
+    static public void init(String cpf){
+      User u = Query.get_by_attribute(User.class, o -> o.cpf().equals(cpf)).get(0);
+      token = u.id();
+
+    }
+
+    static public boolean can_insert_persistence(){
+      if (new UserId(0).equals(token)){
+	return true;
+      }
+      return false;
+    } 
+
+    static public UserId get_user_id() {
+      return token;
+    }
+
+  }
+
+  static void insert_game(Function<Integer, Game> factory) throws PermissionException {
+    if (!Permission.can_insert_persistence()){
+      throw new PermissionException("não tem permissão pra inserir objetos");
+    }
+
+    DataPersistence.insert(Registry.create(Game.class, factory));
+
+  }
+
+  static List<Rent> get_rent_history() {
+    UserId id = Permission.get_user_id();
+    List<Rent> rents = Query.get_by_attribute(Rent.class, o -> o.user().equals(id));
+
+    // assert ordem de criação
+    for(int i = 1; i < rents.size(); i++){
+      assert(rents.get(i).date().after(rents.get(i+1).date()));
+    }
+
+    return rents;
+
+
+  }
+
+  static void register(String nome, String cpf, String password) throws Exception {
     // verificar se usuario já existe
     User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals(cpf));
     if (u != null){
@@ -490,20 +547,34 @@ class UI {
       return;
     }
     // TODO: validar cpf
-    if (cpf.length() != 6) {
-      return;
+    if (cpf.length() != 9) {
+      throw new Exception("cpf inválido");
     }
-    Registry.create(User.class, id -> new User(new UserId(id), nome, cpf));
+    Registry.create(User.class, id -> new User(new UserId(id), nome, cpf, new UserPermissions[] {}));
   }
-  static void login(String cpf){
+  static void login(String cpf, String password) throws Exception {
     User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals(cpf));
+    if (u == null){
+      throw new Error("usuário não existe");
+    }
+
+    // TODO: comparar com a senha certa
+    if (!password.equals("1234")){
+      throw new Exception("senha incorreta");
+    }
     login(u);
 
   }
   static void login(User u){
+    Permission.init(u.cpf());
 
 
   }
+
+  enum EModel {
+    rent, user, game
+  }
+
 
 }
 class App {
@@ -516,7 +587,11 @@ class App {
     Registry.load_inc_id(Rent.class, o -> o.id().id());
     Registry.load_inc_id(User.class, o -> o.id().id());
 
-    UI.login("123456789");
+    try {
+      UI.login("123456789", "1234");
+    } catch (Exception e){
+      System.err.println("ERROR login " + e);
+    }
 
     Game g = Registry.create(Game.class, id -> 
 	  new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
@@ -526,7 +601,7 @@ class App {
 
 
     User eu = Registry.create(User.class, id -> 
-	  new User(new UserId(id), "gabriel", "123456789"));
+	  new User(new UserId(id), "gabriel", "123456789", new UserPermissions[]{} ));
 
     DataPersistence.insert( eu );
 

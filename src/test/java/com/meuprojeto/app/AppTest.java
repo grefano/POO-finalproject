@@ -1,6 +1,7 @@
 package com.meuprojeto.app;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -22,13 +23,22 @@ import org.junit.jupiter.api.Test;
 import com.meuprojeto.app.DataPersistence.Query;
 
 class Util {
-  public static List<Game> insertGames(int amount, int amount_in_stock) {
+  public static List<Game> createGames(int amount, int amount_in_stock) {
     List<Game> result = new ArrayList<>();
+
     for (int i = 0; i < amount; i++){
       final int index = i;
       Game o = Registry.create(Game.class, id -> new Game(new GameId(id), "game"+index, new GameGenre[]{GameGenre.indie}, new GamePlatform[]{GamePlatform.pc}, amount_in_stock, 100f));
-      DataPersistence.insert(o);
       result.add(o);
+    }
+
+    return result;
+  }
+  public static List<Game> insertGames(int amount, int amount_in_stock) {
+    List<Game> result = createGames(amount, amount_in_stock);
+    for (int i = 0; i < amount; i++){
+      DataPersistence.insert(result.get(i));
+      result.add(result.get(i));
     }
     return result;
   }
@@ -38,7 +48,7 @@ class Util {
     List<User> result = new ArrayList<>();
     for (int i = 0; i < amount; i++){
       final int index = i;
-      User o = Registry.create(User.class, id -> new User(new UserId(id), "user"+index, "12345689"));
+      User o = Registry.create(User.class, id -> new User(new UserId(id), "user"+index, "12345689", new UserPermissions[]{}));
       DataPersistence.insert(o);
       result.add(o);
     }
@@ -169,13 +179,54 @@ class GameRentManageTest extends FilePersistenceBaseTest {
     assertTrue(true);
   }
 }
+class AuthTest extends FilePersistenceBaseTest {
+  @Test
+  public void guestCantInsert() {
+
+    Game g = Util.createGames(1, 5).get(0);
+    assertThrows(PermissionException.class, () -> UI.insert_game(_id -> g));
+  }
+
+  @Test
+  public void clientCantInsert() {
+    try {
+      UI.register("user1", "123456789", "1234");
+    } catch (Exception e){
+      assertTrue(false);
+    }
+    Game g = Util.createGames(1, 5).get(0);
+    assertThrows(PermissionException.class, () -> UI.insert_game(_id -> g));
+
+  }
+
+  @Test
+  public void adminCanInsert() {
+
+    try {
+      DataPersistence.insert(
+      Registry.create(User.class, id -> new User(new UserId(id), "admin", "123456789", new UserPermissions[]{UserPermissions.adm}))
+
+      );
+      UI.login("123456789", "1234");
+    } catch (Exception e){
+      assertTrue(false);
+    }
+    Game g = Util.createGames(1, 5).get(0);
+    try {
+      UI.insert_game(_id -> g);
+    } catch (PermissionException e){
+      assertTrue(false);
+    }
+
+    
+  }
+}
 // requisitos do trabalho
 public class AppTest extends FilePersistenceBaseTest {
 
     @Test
     public void shouldOnlyRentWhenAvailable() {
-      DataPersistence.insert(Registry.create(User.class, 
-	id -> new User(new UserId(id), "alguem", "123")));
+      Util.insertUsers(1);
 
       DataPersistence.insert(Registry.create(Game.class,
 	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
@@ -193,8 +244,7 @@ public class AppTest extends FilePersistenceBaseTest {
 
     @Test
     public void shouldDecreaseQuantityWhenRent() {
-      DataPersistence.insert(Registry.create(User.class, 
-	id -> new User(new UserId(id), "alguem", "123")));
+      Util.insertUsers(1);
 
       DataPersistence.insert(Registry.create(Game.class,
 	id -> new Game(new GameId(id), "game1", new GameGenre[] {GameGenre.indie}, new GamePlatform[] {GamePlatform.pc}, 5, 100f)));
@@ -218,8 +268,7 @@ public class AppTest extends FilePersistenceBaseTest {
     @Test
     public void shouldIncreaseQuantityWhenRentReturn() {
       System.out.println("TEST should increase quantity when rent return");
-      DataPersistence.insert(Registry.create(User.class, 
-	id -> new User(new UserId(id), "alguem", "123")));
+      Util.insertUsers(1);
 
       Util.insertGames(1, 5);
 
@@ -242,8 +291,7 @@ public class AppTest extends FilePersistenceBaseTest {
     public void max3GamesRentPerUser() {
       System.out.println("TEST max 3 games rent per user");
 
-      DataPersistence.insert(Registry.create(User.class, 
-	id -> new User(new UserId(id), "alguem", "123")));
+      Util.insertUsers(1);
 
       Util.insertGames(4, 5);
 
@@ -266,9 +314,7 @@ public class AppTest extends FilePersistenceBaseTest {
     void alreadyReturnedRentCantBeAgain() {
       System.out.println("TEST already returned rent cant be again");
       
-      DataPersistence.insert(Registry.create(User.class, 
-	id -> new User(new UserId(id), "alguem", "123")));
-
+      Util.insertUsers(1);
       Util.insertGames(1, 5);
 
 
