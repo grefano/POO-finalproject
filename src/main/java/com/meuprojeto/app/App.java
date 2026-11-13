@@ -2,6 +2,7 @@ package com.meuprojeto.app;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -35,7 +36,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
 
-// TODO: terminal
+// TODO: cli
 // TODO: search game by X AND Y
 
 record GameId(Integer id) {};
@@ -193,7 +194,7 @@ class GameRentManage {
     int amount_games = games.values().stream().mapToInt(Integer::intValue).sum();
 
 
-    System.out.println("rent amount games: " + (amount_games_rented.get() + amount_games));
+    System.out.println("amount games rented: " + amount_games_rented.get() + " amount games: " + amount_games);
     if (amount_games_rented.get() + amount_games > 3) {
       return false;
     }
@@ -329,7 +330,6 @@ class DataPersistence {
   }
   static <T extends Model<T>> Path dir_model(Class<T> type) {
     String dir = DataPersistence.directory + type.getSimpleName().toLowerCase() + "s/all.txt";
-    System.out.println("dir: " + dir);
     Path path = Paths.get(dir);
     return path;
   }
@@ -415,6 +415,10 @@ Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNC
       List<Row<T>> objs = new ArrayList<>();
       List<String> lines = Files.lines(path).collect(Collectors.toList());
       for (int i = 0; i < lines.size(); i++) {
+	if (lines.get(i).isBlank()){
+	  continue;
+	}
+
 	objs.add(new Row<T>(i, string_to_model_object(lines.get(i), type) ));
       }
       return objs;
@@ -493,7 +497,6 @@ Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNC
     } 
     static <T extends Model<T>> T get_first_by_attribute(Class<T> type, Function<T, Boolean> pred) {
       Row<T> result = search_first_by_attribute(type, o -> {
-	System.out.println("search first " + model_object_to_string(o.get()));
 	return pred.apply(o.get());
       });
 
@@ -517,6 +520,91 @@ class PermissionException extends Exception {
     super(msg);
   }
 }
+class CLI {
+  // terminal
+  static public void loop() {
+    Scanner scan = new Scanner(System.in);
+    while(true){
+
+      System.out.println("MENU\n- 1 rent\n- 2 show all games\n- 3 show rent history\n- 0 quit");
+      String line = scan.nextLine();
+      if (line.equals("1")) {
+	UI.start_rent();
+
+	  System.out.println("user: ");
+	  line = scan.nextLine();
+	  if (!line.equals("")){
+	    System.out.println("não é possível alugar para outros usuários no momento");
+
+	} else {
+	  while(true){
+	    System.out.println("game: ");
+	    line = scan.nextLine();
+	    if (line.equals("")){
+	      break;
+	    }
+	    GameId game = get_game(line);
+	    System.out.println("game chosen: " + game);
+	    UI.add_game_to_rent(game, 1);
+
+
+	  }
+
+	}
+	UI.finish_rent();
+
+
+
+      }
+      if (line.equals("2")) {
+	List<Game> games = Query.get_all(Game.class);
+	for (Game g : games) {
+	  System.out.println(g.title());
+	}
+
+      }
+      if (line.equals("3")) {
+	List<Rent> rents = UI.get_rent_history();
+	rents.forEach(r -> {
+	  List<Game> games = new ArrayList<>();
+	  for (GameId g : r.games()){
+	    games.add(
+	      Query.get_first_by_attribute(Game.class, o -> o.id().equals(g))
+	    );
+
+	  }
+	  String titles = "";
+	  for (Game g : games) {
+	    titles += " " + g.title();
+	  	
+	  }
+	System.out.println(r.state().toString() + " games [" + titles + " ]");
+	});
+
+      }
+      if (line.equals("0") || line.equals("quit") || line.equals("q")) {
+	line = scan.nextLine();
+	break;
+      }
+
+    }
+    scan.close();
+
+  }
+
+
+  public static GameId get_game(String title) {
+    Row<Game> result = Query.search_first_by_attribute(Game.class, o -> o.get().title().equals(title));
+    if (result == null) {
+      return null;
+    }
+    return result.get().id();
+
+  } 
+
+
+}
+
 // não deve se responsabilizar por detalhes de implementação do terminal ou da gui
 class UI {
   static private HashMap<GameId, Integer> rent_games;
@@ -564,6 +652,7 @@ class UI {
     rent_games.put(game, amount);
   }
   static void finish_rent(){
+    // TODO: handle case where couldnt rent
     GameRentManage.rent(rent_games, Permission.get_user_id());
   }
 
@@ -621,7 +710,7 @@ class UI {
 class App {
 
   public static void main(String[] args) {
-    System.out.println("main");
+
 
     // TODO: evitar repetição e rodar pra cada classe manualmente
     Registry.load_inc_id(Game.class, o -> o.id().id());
@@ -650,11 +739,12 @@ class App {
     System.out.println("u by cpf" + u);
 
 
-    HashMap<GameId, Integer> games_rent = new HashMap<GameId, Integer>();
-    games_rent.put(g.id(), 1);
-    GameRentManage.rent(games_rent, u.id());
+    // HashMap<GameId, Integer> games_rent = new HashMap<GameId, Integer>();
+    // games_rent.put(g.id(), 1);
+    // GameRentManage.rent(games_rent, u.id());
 
 
+    CLI.loop();
 
     // GameManage.register_game();
   }
