@@ -29,6 +29,7 @@ import javax.xml.crypto.Data;
 import com.google.gson.Gson;
 import com.meuprojeto.app.DataPersistence.Query;
 import com.meuprojeto.app.DataPersistence.Row;
+import com.meuprojeto.app.UI.EVENTS_AUTH;
 import com.sun.source.tree.AssertTree;
 
 
@@ -522,126 +523,146 @@ class PermissionException extends Exception {
 }
 class CLI {
   // terminal
+  static String line;
+  static public void rent() {
+    UI.start_rent();
+
+    System.out.println("user: ");
+    line = get_line();
+    if (!line.equals("")){
+      System.out.println("não é possível alugar para outros usuários no momento");
+
+    } else {
+      while(true){
+	System.out.println("game: ");
+	line = get_line();
+	if (line.equals("")){
+	  break;
+	}
+	GameId game = get_game(line);
+	System.out.println("game chosen: " + game);
+	UI.add_game_to_rent(game, 1);
+
+
+      }
+
+    }
+    UI.finish_rent();
+  }
+  static public void show_all_games() {
+    List<Game> games = Query.get_all(Game.class);
+    for (Game g : games) {
+      System.out.println(g.title());
+    }
+  }
+  static public void show_rent_history() {
+    List<Rent> rents = UI.get_rent_history();
+    rents.forEach(r -> {
+      List<Game> games = new ArrayList<>();
+      for (GameId g : r.games()){
+	games.add(
+	  Query.get_first_by_attribute(Game.class, o -> o.id().equals(g))
+	);
+
+      }
+      String titles = "";
+      for (Game g : games) {
+	titles += " " + g.title();
+
+      }
+      System.out.println(r.state().toString() + " games [" + titles + " ]");
+    });
+
+  }
+  static public void login() {
+    String cpf;
+    String password;
+    while(true){
+      System.out.println("cpf: ");
+      cpf = get_line();
+      System.out.println("senha: ");
+      password = get_line();
+
+      UI.EVENTS_AUTH event = UI.login(cpf, password);
+      if (event == EVENTS_AUTH.SUCCESS) {
+	return;
+      }
+
+      System.out.println("- 1 try again \n- 2 create account\n- 3 exit");
+      line =  get_line();
+      if (line.equals("1")) {
+	continue;
+      }
+      if (line.equals("2")) {
+	// TODO: se usuário existe não passar o mesmo form pro registro
+	if (event != UI.EVENTS_AUTH.USER_INVALID) {
+	  register(cpf, password);
+
+	}
+	return;
+      }
+      if (line.equals("3")) {
+	return;
+      }
+
+
+    }
+  }
+  static public void register(String cpf, String password) {
+    System.out.println("name: ");
+    String name = get_line();
+    // TODO: scan input qnd caller não passa
+    while(true){
+      try {
+	UI.register(name, cpf, password);
+	break;
+
+      } catch (Exception e) {
+	System.out.println(e.toString());
+      }
+      System.out.println("- 1 try again\n- 2 exit");
+      line = get_line();
+      if (line.equals("2")) {
+	break;
+      }
+
+      System.out.println("cpf: ");
+      cpf = get_line();
+      System.out.println("senha: ");
+      password = get_line();
+
+    }
+  }
   static public void loop() {
-    Scanner scan = new Scanner(System.in);
     while(true){
 
       System.out.println("MENU\n- 1 rent\n- 2 show all games\n- 3 show rent history\n- 4 login\n- 0 quit");
-      String line = scan.nextLine();
+      String line = get_line();
       if (line.equals("1")) {
-	UI.start_rent();
-
-	  System.out.println("user: ");
-	  line = scan.nextLine();
-	  if (!line.equals("")){
-	    System.out.println("não é possível alugar para outros usuários no momento");
-
-	} else {
-	  while(true){
-	    System.out.println("game: ");
-	    line = scan.nextLine();
-	    if (line.equals("")){
-	      break;
-	    }
-	    GameId game = get_game(line);
-	    System.out.println("game chosen: " + game);
-	    UI.add_game_to_rent(game, 1);
-
-
-	  }
-
-	}
-	UI.finish_rent();
-
-
-
+	rent();
       }
       if (line.equals("2")) {
-	List<Game> games = Query.get_all(Game.class);
-	for (Game g : games) {
-	  System.out.println(g.title());
-	}
-
+	show_all_games();
       }
       if (line.equals("3")) {
-	List<Rent> rents = UI.get_rent_history();
-	rents.forEach(r -> {
-	  List<Game> games = new ArrayList<>();
-	  for (GameId g : r.games()){
-	    games.add(
-	      Query.get_first_by_attribute(Game.class, o -> o.id().equals(g))
-	    );
-
-	  }
-	  String titles = "";
-	  for (Game g : games) {
-	    titles += " " + g.title();
-	  	
-	  }
-	System.out.println(r.state().toString() + " games [" + titles + " ]");
-	});
-
+	show_rent_history();
       }
       if (line.equals("4")) {
-	  String cpf;
-	  String password;
-	while(true){
-	  System.out.println("cpf: ");
-	  cpf = scan.nextLine();
-	  System.out.println("senha: ");
-	  password = scan.nextLine();
-	  try {
-	    UI.login(cpf, password);
-	    break;
-
-	  } catch (Exception e) {
-	    System.out.println(e.toString());
-	    System.out.println("- 1 try again \n- 2 create account\n- 3 exit");
-	    line =  scan.nextLine();
-	    if (!line.equals("1")) {
-	      break;
-	    }
-
-	  }
-
-	}
-	if (line.equals("3")) {
-	  break;
-	}
-	if (line.equals("2")) {
-	  System.out.println("name: ");
-	  String name = scan.nextLine();
-	  while(true){
-	    try {
-	      UI.register(name, cpf, password);
-	      break;
-
-	    } catch (Exception e) {
-	      System.out.println(e.toString());
-	    }
-	    System.out.println("- 1 try again\n- 2 exit");
-	    line = scan.nextLine();
-	    if (line.equals("2")) {
-	      break;
-	    }
-
-	    System.out.println("cpf: ");
-	    cpf = scan.nextLine();
-	    System.out.println("senha: ");
-	    password = scan.nextLine();
-
-	  }
-
-	}
+	login();
       }
       if (line.equals("0") || line.equals("quit") || line.equals("q")) {
-	line = scan.nextLine();
+	line = get_line();
 	break;
       }
 
     }
     scan.close();
 
+  }
+
+  static Scanner scan = new Scanner(System.in);
+  public static String get_line(){
+    return scan.nextLine();
   }
 
 
@@ -734,17 +755,23 @@ class UI {
      Registry.create_user(nome, cpf)
     );
   }
-  static void login(String cpf, String password) throws Exception {
+  static enum EVENTS_AUTH {
+    SUCCESS,
+    USER_INVALID,
+    PASSWORD_INVALID,
+  }
+  static EVENTS_AUTH login(String cpf, String password) {
     User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals(cpf));
     if (u == null){
-      throw new Exception("usuário não existe");
+      return EVENTS_AUTH.USER_INVALID;
     }
 
     // TODO: comparar com a senha certa
     if (!password.equals("1234")){
-      throw new Exception("senha incorreta");
+      return EVENTS_AUTH.PASSWORD_INVALID;
     }
     login(u);
+    return EVENTS_AUTH.SUCCESS;
 
   }
   static void login(User u){
