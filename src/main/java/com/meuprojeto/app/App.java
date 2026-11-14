@@ -31,7 +31,6 @@ import com.meuprojeto.app.UI.Permission;
 import java.nio.file.*;
 
 
-// TODO: cli
 // TODO: search game by X AND Y
 
 record GameId(Integer id) {};
@@ -538,12 +537,15 @@ class CLI {
       }
 
     }
-    UI.finish_rent();
+    boolean couldrent = UI.finish_rent();
+    if (!couldrent){
+      System.out.println("couldnt rent");
+    }
   }
   static public void show_all_games() {
     List<Game> games = Query.get_all(Game.class);
     for (Game g : games) {
-      System.out.println(g.title());
+      System.out.println(g.title() + " (" + g.quantity() + ")" + " R$"+g.price());
     }
   }
   static public void show_rent_history() {
@@ -813,11 +815,15 @@ class UI {
     }
   }
   static void add_game_to_rent(GameId game, Integer amount){
-    rent_games.put(game, amount);
+    Integer a = rent_games.get(game);
+    Integer total = (a == null ? 0 : a) + amount;
+    rent_games.put(game, total);
   }
-  static void finish_rent(){
+  static boolean finish_rent(){
     // TODO: handle case where couldnt rent
-    GameRentManage.rent(rent_games, Permission.get_user_id());
+    System.out.println(rent_games.toString());
+    return GameRentManage.rent(rent_games, Permission.get_user_id());
+
   }
 
   static List<Rent> get_rent_history() {
