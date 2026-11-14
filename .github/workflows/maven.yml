@@ -32,7 +32,7 @@ jobs:
         cache: maven
     - run: java --version
     - name: Build with Maven
-      run: mvn clean test exec:java -Dexec.mainClass="com.meuprojeto.app.App"
+      run: mvn clean test -Dexec.mainClass="com.meuprojeto.app.App"
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
