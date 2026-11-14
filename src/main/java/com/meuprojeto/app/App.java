@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,19 +21,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.xml.crypto.Data;
 
 import com.google.gson.Gson;
 import com.meuprojeto.app.DataPersistence.Query;
 import com.meuprojeto.app.DataPersistence.Row;
 import com.meuprojeto.app.UI.EVENTS_AUTH;
-import com.sun.source.tree.AssertTree;
-
+import com.meuprojeto.app.UI.Permission;
 
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 
 
 // TODO: cli
@@ -512,9 +506,6 @@ Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNC
     }
   }
 }
-class Cli {
-
-}
 class PermissionException extends Exception {
   public PermissionException() {}
   public PermissionException(String msg) {
@@ -587,6 +578,12 @@ class CLI {
       if (event == EVENTS_AUTH.SUCCESS) {
 	return;
       }
+      if (event == EVENTS_AUTH.USER_INVALID) {
+	System.out.println("failed. user invalid");
+      } 
+      if (event == EVENTS_AUTH.PASSWORD_INVALID) {
+	System.out.println("failed. password invalid");
+      }
 
       System.out.println("- 1 try again \n- 2 create account\n- 3 exit");
       line =  get_line();
@@ -595,7 +592,7 @@ class CLI {
       }
       if (line.equals("2")) {
 	// TODO: se usuário existe não passar o mesmo form pro registro
-	if (event != UI.EVENTS_AUTH.USER_INVALID) {
+	if (event == UI.EVENTS_AUTH.USER_INVALID) {
 	  register(cpf, password);
 
 	}
@@ -636,7 +633,9 @@ class CLI {
   static public void loop() {
     while(true){
 
-      System.out.println("MENU\n- 1 rent\n- 2 show all games\n- 3 show rent history\n- 4 login\n- 0 quit");
+      System.out.println("=== MENU ===");
+      System.out.println("you are logged as " + Permission.get_user_name());
+      System.out.println("- 1 rent\n- 2 show all games\n- 3 show rent history\n- 4 login\n- 0 quit");
       String line = get_line();
       if (line.equals("1")) {
 	rent();
@@ -651,7 +650,6 @@ class CLI {
 	login();
       }
       if (line.equals("0") || line.equals("quit") || line.equals("q")) {
-	line = get_line();
 	break;
       }
 
@@ -683,23 +681,35 @@ class UI {
   static private HashMap<GameId, Integer> rent_games;
   class Permission {
     static private UserId token = null;
+    static private String username = "guest";
 
     // gerar token
     static public void init(String cpf){
       User u = Query.get_by_attribute(User.class, o -> o.cpf().equals(cpf)).get(0);
       token = u.id();
+      username = u.name();
+      System.out.println("username = " + u.name());
 
     }
 
     static public boolean can_insert_persistence(){
-      if (new UserId(0).equals(token)){
-	return true;
+      User u = Query.get_first_by_attribute(User.class, o -> o.id().equals(token));
+      if (u == null) {
+	return false;
+      }
+      for (UserPermissions perm : u.perms()) {
+	if (perm == UserPermissions.adm) {
+	  return true;
+	}
       }
       return false;
     } 
 
     static public UserId get_user_id() {
       return token;
+    }
+    static public String get_user_name() {
+      return username;
     }
 
   }
@@ -751,9 +761,12 @@ class UI {
     if (cpf.length() != 9) {
       throw new Exception("cpf inválido");
     }
+    User newuser = Registry.create_user(nome, cpf);
     DataPersistence.insert(
-     Registry.create_user(nome, cpf)
+      newuser
     );
+    System.out.println("login after register: " + newuser.toString());
+    login(newuser);
   }
   static enum EVENTS_AUTH {
     SUCCESS,

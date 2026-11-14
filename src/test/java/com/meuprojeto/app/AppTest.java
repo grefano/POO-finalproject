@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import com.meuprojeto.app.DataPersistence.Query;
 import com.meuprojeto.app.DataPersistence.Row;
+import com.meuprojeto.app.UI.Permission;
 
 class Util {
   public static List<Game> create_games(int amount, int amount_in_stock) {
@@ -254,7 +255,9 @@ class AuthTest extends FilePersistenceBaseTest {
   @Test
   public void clientCantInsert() {
     try {
+      // FIXME: o jeito q o Permission verifica as permissões é usando o id==0, então esse usuario acaba virando admin
       UI.register("user1", "123456789", "1234");
+      System.out.println("username: " + Permission.get_user_name() + " " + Permission.get_user_id());
     } catch (Exception e){
       assertTrue(false);
     }

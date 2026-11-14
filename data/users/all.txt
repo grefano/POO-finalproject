@@ -1,1 +1,3 @@
 {"id":{"id":0},"name":"gabriel","cpf":"123456789"}
+{"id":{"id":1},"name":"irado","cpf":"234567890","perms":[]}
+{"id":{"id":1},"name":"testelegal","cpf":"987654321","perms":[]}
