@@ -526,7 +526,7 @@ class CLI {
     Scanner scan = new Scanner(System.in);
     while(true){
 
-      System.out.println("MENU\n- 1 rent\n- 2 show all games\n- 3 show rent history\n- 0 quit");
+      System.out.println("MENU\n- 1 rent\n- 2 show all games\n- 3 show rent history\n- 4 login\n- 0 quit");
       String line = scan.nextLine();
       if (line.equals("1")) {
 	UI.start_rent();
@@ -581,6 +581,58 @@ class CLI {
 	System.out.println(r.state().toString() + " games [" + titles + " ]");
 	});
 
+      }
+      if (line.equals("4")) {
+	  String cpf;
+	  String password;
+	while(true){
+	  System.out.println("cpf: ");
+	  cpf = scan.nextLine();
+	  System.out.println("senha: ");
+	  password = scan.nextLine();
+	  try {
+	    UI.login(cpf, password);
+	    break;
+
+	  } catch (Exception e) {
+	    System.out.println(e.toString());
+	    System.out.println("- 1 try again \n- 2 create account\n- 3 exit");
+	    line =  scan.nextLine();
+	    if (!line.equals("1")) {
+	      break;
+	    }
+
+	  }
+
+	}
+	if (line.equals("3")) {
+	  break;
+	}
+	if (line.equals("2")) {
+	  System.out.println("name: ");
+	  String name = scan.nextLine();
+	  while(true){
+	    try {
+	      UI.register(name, cpf, password);
+	      break;
+
+	    } catch (Exception e) {
+	      System.out.println(e.toString());
+	    }
+	    System.out.println("- 1 try again\n- 2 exit");
+	    line = scan.nextLine();
+	    if (line.equals("2")) {
+	      break;
+	    }
+
+	    System.out.println("cpf: ");
+	    cpf = scan.nextLine();
+	    System.out.println("senha: ");
+	    password = scan.nextLine();
+
+	  }
+
+	}
       }
       if (line.equals("0") || line.equals("quit") || line.equals("q")) {
 	line = scan.nextLine();
@@ -685,7 +737,7 @@ class UI {
   static void login(String cpf, String password) throws Exception {
     User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals(cpf));
     if (u == null){
-      throw new Error("usuário não existe");
+      throw new Exception("usuário não existe");
     }
 
     // TODO: comparar com a senha certa
