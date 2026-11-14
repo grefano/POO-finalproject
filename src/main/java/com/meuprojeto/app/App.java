@@ -635,7 +635,7 @@ class CLI {
 
       System.out.println("=== MENU ===");
       System.out.println("you are logged as " + Permission.get_user_name());
-      System.out.println("- 1 rent\n- 2 show all games\n- 3 show rent history\n- 4 login\n- 0 quit");
+      System.out.println("- 1 rent\n- 2 show all games\n- 3 show rent history\n- 4 login\n- 5 insert game\n- 0 quit");
       String line = get_line();
       if (line.equals("1")) {
 	rent();
@@ -649,6 +649,20 @@ class CLI {
       if (line.equals("4")) {
 	login();
       }
+      // TODO
+      if (line.equals("5")) {
+	if (!Permission.can_insert_persistence()) {
+	  System.out.println("have no permission to insert new game");
+	  continue;
+	}
+	Game game = get_new_game();
+	try {
+	  UI.insert_game(game);
+
+	} catch (PermissionException e){
+	  System.out.println("have no permission to insert new games");
+	}
+      }
       if (line.equals("0") || line.equals("quit") || line.equals("q")) {
 	break;
       }
@@ -656,6 +670,72 @@ class CLI {
     }
     scan.close();
 
+  }
+  public static Game get_new_game() {
+    System.out.println("title: ");
+    String title = get_line();
+
+    System.out.println("genres: ");
+    List<GameGenre> genre = get_list(l -> {
+      try {
+	return GameGenre.valueOf(l);
+      } catch (IllegalArgumentException e) {
+	return null;
+
+      }
+    });
+
+    System.out.println("platforms: ");
+    List<GamePlatform> platform = get_list(l -> {
+      try {
+	return GamePlatform.valueOf(l);
+      } catch (IllegalArgumentException e) {
+	return null;
+      }
+    });
+
+    System.out.println("quantity: ");
+    Integer quantity = 0;
+    quantity = Integer.valueOf(get_line());
+
+    System.out.println("price: ");
+    Float price = 0.0f;
+    price = Float.valueOf(get_line());
+
+
+
+    return Registry.create_game(title, genre.toArray(new GameGenre[0]), platform.toArray(new GamePlatform[0]), quantity, price);
+    
+
+  }
+  public static <T> List<T> get_list(Function<String, T> on_input) {
+    List<T> result = new ArrayList<>();
+
+    while(true){
+      String line = get_line();
+      T o = on_input.apply(line);
+      if (o != null){
+	result.add(o);
+      }
+      for (T i : result) {
+	System.out.println(i.toString());
+      }
+
+      if (line.isBlank()){
+	return result;
+      }
+
+
+    }
+
+  }
+
+  public static String get_game_title() {
+    return get_line();
+  }
+  public static Integer get_game_quantity() {
+    String line = get_line();
+    return Integer.valueOf(line);
   }
 
   static Scanner scan = new Scanner(System.in);
@@ -693,8 +773,9 @@ class UI {
     }
 
     static public boolean can_insert_persistence(){
+      if (token == null) return false;
       User u = Query.get_first_by_attribute(User.class, o -> o.id().equals(token));
-      if (u == null) {
+      if (u == null || u.perms() == null) {
 	return false;
       }
       for (UserPermissions perm : u.perms()) {
@@ -815,30 +896,10 @@ class App {
       System.err.println("ERROR login " + e);
     }
 
-    // Game g = Registry.create(Game.class, id -> 
-    //   new Game(new GameId(id), "fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f)
-    // );
-    Game g = Registry.create_game("fezes", new GameGenre[]{GameGenre.triple_a, GameGenre.three_d, GameGenre.fps}, new GamePlatform[]{GamePlatform.console}, 999, 9999.99f);
-    DataPersistence.insert( g );
-
-
-
-    User eu = Registry.create_user("gabriel", "123456789", new UserPermissions[]{} );
-
-    DataPersistence.insert( eu );
-
-    User u = Query.get_first_by_attribute(User.class, o -> o.cpf().equals("123456789"));
-    System.out.println("u by cpf" + u);
-
-
-    // HashMap<GameId, Integer> games_rent = new HashMap<GameId, Integer>();
-    // games_rent.put(g.id(), 1);
-    // GameRentManage.rent(games_rent, u.id());
 
 
     CLI.loop();
 
-    // GameManage.register_game();
   }
 
 }

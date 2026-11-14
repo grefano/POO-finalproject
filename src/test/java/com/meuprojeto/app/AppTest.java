@@ -255,7 +255,6 @@ class AuthTest extends FilePersistenceBaseTest {
   @Test
   public void clientCantInsert() {
     try {
-      // FIXME: o jeito q o Permission verifica as permissões é usando o id==0, então esse usuario acaba virando admin
       UI.register("user1", "123456789", "1234");
       System.out.println("username: " + Permission.get_user_name() + " " + Permission.get_user_id());
     } catch (Exception e){
@@ -288,16 +287,8 @@ public class AppTest extends FilePersistenceBaseTest {
       Util.insert_users(1);
 
       Util.insert_games(1, 5);
-      System.out.println("INSERT GAMES");
-    // FIXME: não tá criando o jogo por algum motivo
       Util.insert_games(1, 0);
-      System.out.println("INSERTED GAMES");
       
-
-      for(Row<Game> g : DataPersistence.get_row_all(Game.class)){
-
-    System.err.println("abc games: " + DataPersistence.model_object_to_string(g.get()));
-    }
 
       boolean could1 = GameRentManage.rent(Map.of(new GameId(0), 1), new UserId(0));
       boolean couldunavailable = GameRentManage.rent(Map.of(new GameId(1), 1), new UserId(0));
