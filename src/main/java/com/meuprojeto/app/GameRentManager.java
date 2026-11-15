@@ -17,9 +17,17 @@ class GameRentManage {
     return rent(games, user, nextweek);
   }
   public static boolean rent(Map<GameId, Integer> games, UserId user, Date deadline) {
+    if (games.values().stream().mapToInt(Integer::intValue).sum() <= 0){
+      return false;
+    }
     List<Rent> user_rents = Query.get_by_attribute(Rent.class, o -> o.user().equals(user));
     AtomicReference<Integer> amount_games_rented = new AtomicReference<>(0);
-    user_rents.forEach((o) -> amount_games_rented.set(amount_games_rented.get() + o.games().length));
+    user_rents.forEach((o) -> {
+      if (!o.state().equals(RentState.returned) && !o.state().equals(RentState.returned_late)) {
+	amount_games_rented.set(amount_games_rented.get() + o.games().length);
+
+      }
+    });
 
     int amount_games = games.values().stream().mapToInt(Integer::intValue).sum();
 
