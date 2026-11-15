@@ -4,6 +4,7 @@ package com.meuprojeto.app;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.meuprojeto.app.DataPersistence.Query;
@@ -89,8 +90,41 @@ class CLI {
     }
 
   }
+  // lista de valores únicos, se usuário digitar um valor repetido ele será removido da lista
+  public static <T> List<T> get_list_unique(Function<String, T> on_input) {
+    // FIXME: type blank mostra primeiro o "menu de erro" do get_enum e depois verifica se é null no get_list
+    return get_list((in, list) -> {
+      T o = on_input.apply(in);
+      if (o == null){
+	return list;
+      }
+      if (list.contains(o)) {
+	list.remove(o);
+	return list;
+      }
+
+      list.add(o);
+      return list;
+    });
+
+  }
+  static public void filter_games(List<Game> games) {
+    while(true) {
+
+      // GameGenre genre = get_enum(GameGenre.class);
+      List<GameGenre> genres = get_list_unique(l -> get_enum(l, GameGenre.class));
+      System.out.println("genres: " + genres.toString());
+
+
+      return;
+
+
+    }
+
+  }
   static public void show_all_games() {
     List<Game> games = Query.get_all(Game.class);
+    filter_games(games);
     for (Game g : games) {
       System.out.println(g.title() + " (" + g.quantity() + ")" + " R$"+g.price());
     }
@@ -233,6 +267,9 @@ class CLI {
       System.out.println("have no permission to insert new games");
     }
   }
+  public static <T extends Enum<T>> T get_enum(Class<T> classe) {
+    return get_enum(get_line(), classe);
+  }
   public static <T extends Enum<T>> T get_enum(String l, Class<T> classe) {
     try {
       return Enum.valueOf(classe, l);
@@ -261,14 +298,10 @@ class CLI {
     String title = get_line();
 
     System.out.println("genres: ");
-    List<GameGenre> genre = get_list(l -> {
-      return get_enum(l, GameGenre.class);
-    });
+    List<GameGenre> genre = get_list_unique(l -> get_enum(l, GameGenre.class));
 
     System.out.println("platforms: ");
-    List<GamePlatform> platform = get_list(l -> {
-      return get_enum(l, GamePlatform.class);
-    });
+    List<GamePlatform> platform = get_list_unique(l -> get_enum(l, GamePlatform.class));
 
     System.out.println("quantity: ");
     Integer quantity = 0;
@@ -284,15 +317,12 @@ class CLI {
     
 
   }
-  public static <T> List<T> get_list(Function<String, T> on_input) {
+  public static <T> List<T> get_list(BiFunction<String, List<T>, List<T>> on_input) { 
     List<T> result = new ArrayList<>();
 
     while(true){
       String line = get_line();
-      T o = on_input.apply(line);
-      if (o != null){
-	result.add(o);
-      }
+      result = on_input.apply(line, result);
       for (T i : result) {
 	System.out.println(i.toString());
       }
@@ -306,6 +336,28 @@ class CLI {
     }
 
   }
+	//  public static <T> List<T> get_list(Function<String, T> on_input) {
+	//    List<T> result = new ArrayList<>();
+	//
+	//    while(true){
+	//      String line = get_line();
+	//      T o = on_input.apply(line);
+	//      if (o != null){
+	// result.add(o);
+	//      }
+	//      for (T i : result) {
+	// System.out.println(i.toString());
+	//      }
+	//
+	//      if (line.isBlank()){
+	// System.out.println(result.toString());
+	// return result;
+	//      }
+	//
+	//
+	//    }
+	//
+	//  }
 
   public static String get_game_title() {
     return get_line();
