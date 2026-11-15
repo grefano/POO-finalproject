@@ -673,27 +673,41 @@ class CLI {
     scan.close();
 
   }
+  public static <T extends Enum<T>> T get_enum(String l, Class<T> classe) {
+    try {
+      return Enum.valueOf(classe, l);
+    } catch (IllegalArgumentException e) {
+      System.out.println("chosen option doesnt exist");
+      System.out.println("- 1 continue\n- 2 show all options\n- 3 create genre");
+      String line = get_line();
+      if (line.equals("2")) {
+	for (T enu : classe.getEnumConstants()) {
+	  System.out.print(enu.toString() + ", ");
+	}
+	System.out.println();
+
+      }
+      if (line.equals("3")) {
+	// TODO
+	System.out.println("unimplemented");
+      }
+      return null;
+
+    }
+
+  }
   public static Game get_new_game() {
     System.out.println("title: ");
     String title = get_line();
 
     System.out.println("genres: ");
     List<GameGenre> genre = get_list(l -> {
-      try {
-	return GameGenre.valueOf(l);
-      } catch (IllegalArgumentException e) {
-	return null;
-
-      }
+      return get_enum(l, GameGenre.class);
     });
 
     System.out.println("platforms: ");
     List<GamePlatform> platform = get_list(l -> {
-      try {
-	return GamePlatform.valueOf(l);
-      } catch (IllegalArgumentException e) {
-	return null;
-      }
+      return get_enum(l, GamePlatform.class);
     });
 
     System.out.println("quantity: ");
@@ -724,6 +738,7 @@ class CLI {
       }
 
       if (line.isBlank()){
+	System.out.println(result.toString());
 	return result;
       }
 

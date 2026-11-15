@@ -5,3 +5,6 @@
 
 
 {"id":{"id":0},"title":"iradolegal","genre":[],"platform":[],"quantity":132,"price":12093.0}
+{"id":{"id":0},"title":"celeste","genre":["indie"],"platform":["pc"],"quantity":10,"price":123.0}
+{"id":{"id":1},"title":"catose","genre":[],"platform":[],"quantity":2019902814,"price":1.0}
+{"id":{"id":0},"title":"f aef","genre":["two_d"],"platform":["mobile"],"quantity":12,"price":135.0}
