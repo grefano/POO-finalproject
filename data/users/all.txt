@@ -1,1 +1,2 @@
 {"id":{"id":0},"name":"gabriel","cpf":"123456789","perms":["adm"]}
+{"id":{"id":1},"name":"pedro henrique","cpf":"234567890","perms":[]}

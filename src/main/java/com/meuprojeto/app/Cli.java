@@ -21,22 +21,26 @@ class CLI {
     line = get_line();
     if (!line.equals("")){
       System.out.println("não é possível alugar para outros usuários no momento");
-
-    } else {
-      while(true){
-	System.out.println("game: ");
-	line = get_line();
-	if (line.equals("")){
-	  break;
-	}
-	GameId game = get_game(line);
-	System.out.println("game chosen: " + game);
-	UI.add_game_to_rent(game, 1);
-
-
-      }
+      return;
 
     }
+    while(true){
+      System.out.println("game (enter blank to finish): ");
+      line = get_line();
+      if (line.equals("")){
+	break;
+      }
+      GameId game = get_game(line);
+      if (game == null){
+	System.out.println("game doesnt exist");
+	continue;
+      }
+      System.out.println("game chosen: " + game);
+      UI.add_game_to_rent(game, 1);
+
+
+    }
+
     boolean couldrent = UI.finish_rent();
     if (!couldrent){
       System.out.println("couldnt rent");
@@ -44,6 +48,10 @@ class CLI {
   }
   static public void rent_return() {
     RentId rentid = get_rent();
+    if (rentid == null){
+      System.out.println("invalid rent");
+      return;
+    }
     UI.rent_return(rentid);
 
   }
@@ -86,6 +94,10 @@ class CLI {
     for (Game g : games) {
       System.out.println(g.title() + " (" + g.quantity() + ")" + " R$"+g.price());
     }
+    if (games.size() == 0){
+      System.out.println("no games registered");
+
+    }
   }
   static public void show_rent_history() {
     List<Rent> rents = UI.get_rent_history();
@@ -104,6 +116,9 @@ class CLI {
       }
       System.out.println(r.state().toString() + " games [" + titles + " ]");
     });
+    if (rents.size() == 0){
+      System.out.println("no rents");
+    }
 
   }
   static public void login() {

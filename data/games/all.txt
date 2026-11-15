@@ -1,10 +1,18 @@
 {"id":{"id":0},"title":"maisumteste","genre":[],"platform":[],"quantity":1,"price":1.0}
-{"id":{"id":1},"title":"aefl kaejflkej","genre":[],"platform":[],"quantity":123,"price":123.0}
+
+
+{"id":{"id":1},"title":"aefl kaejflkej","genre":[],"platform":[],"quantity":119,"price":123.0}
+
+
+
+
 {"id":{"id":2},"title":"ultimotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":3},"title":"ultimomesmotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":4},"title":"porfavor","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":5},"title":"denovooefo","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":6},"title":"outrotestelegal","genre":[],"platform":[],"quantity":1,"price":1.0}
+
+
 
 
 {"id":{"id":7},"title":"testealefjaeflk","genre":[],"platform":[],"quantity":1,"price":1.0}

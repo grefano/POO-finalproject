@@ -68,7 +68,6 @@ class UI {
     rent_games.put(game, total);
   }
   static boolean finish_rent(){
-    // TODO: handle case where couldnt rent
     System.out.println(rent_games.toString());
     return GameRentManage.rent(rent_games, Permission.get_user_id());
 

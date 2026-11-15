@@ -61,6 +61,7 @@ class GameRentManage {
 
       DataPersistence.update(Game.class, newgame);
     }
+    // TODO: armazenar um mapa de jogos e quantidade
     DataPersistence.insert(
 	Registry.create_rent(user, deadline, games.keySet().toArray(new GameId[0]))
     );
@@ -105,7 +106,7 @@ class GameRentManage {
     Float result = get_games_total_price(rent.games());
 
     Date today = new Date();
-    if ( today.after(rent.return_deadline()) ){
+    if ( today.after(rent.return_deadline()) ){//(today.getTime() < rent.return_deadline().getTime()) ) {
       result *= 1.5f;
     }
 
