@@ -1,4 +1,5 @@
-{"id":{"id":0},"title":"fezes","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":993,"price":9999.99}
+{"id":{"id":0},"title":"fezes","genre":["triple_a","three_d","fps"],"platform":["console"],"quantity":994,"price":9999.99}
+
 
 
 
@@ -19,3 +20,4 @@
 {"id":{"id":3},"title":"sopragarantir","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":4},"title":"porfavor","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":5},"title":"denovooefo","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":6},"title":"outrotestelegal","genre":[],"platform":[],"quantity":1,"price":1.0}
