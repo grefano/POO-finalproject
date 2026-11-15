@@ -16,3 +16,5 @@
 {"id":{"id":2},"title":"ultimotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":3},"title":"ultimomesmotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":3},"title":"deveser3","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":3},"title":"sopragarantir","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":4},"title":"porfavor","genre":[],"platform":[],"quantity":1,"price":1.0}

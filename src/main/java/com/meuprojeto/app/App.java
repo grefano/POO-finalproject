@@ -114,14 +114,14 @@ class Registry {
   // }
 
   private static <T extends Model<T>> Integer get_id(Class<T> type){
-    int id = last_ids.merge(type, 1, Integer::sum) - 1;
+    int id = last_ids.merge(type, 0, (last, ignored) -> last + 1);
     System.err.println("get id for " + type + " = " + id);
     return id;
   }
   // if a object is created now, what would be its id?
   public static <T extends Model<T>> Integer get_inc_id(Class<T> type){
     Integer id = last_ids.get(type);
-    return id == null ? 0 : id;
+    return id == null ? 0 : id+1;
   }
 
   public static Game create_game(String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity, Float price){
@@ -146,15 +146,12 @@ class Registry {
 
 
     List<T> objs = Query.get_all(type);
-    System.out.println("objs: " + objs);
     for (T o : objs) {
-      System.out.println(type + " 119: " + last_ids.get(type));
-
       if (last_ids.get(type) == null ||  get_pk.apply(o) > last_ids.get(type)){
 	Registry.last_ids.put(type, get_pk.apply(o));
       }
     }
-    return last_ids.get(type) == null ? 0 : last_ids.get(type) ;
+    return last_ids.get(type) == null ? -1 : last_ids.get(type) ;
   }
 
   static void reset_last_ids(){
