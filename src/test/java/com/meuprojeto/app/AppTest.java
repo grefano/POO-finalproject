@@ -214,17 +214,44 @@ class UITest extends FilePersistenceBaseTest {
 
 class RegistryTest extends FilePersistenceBaseTest {
   @Test
-  void shouldLoadIncId(){
+  void shouldUpdateIncId(){
     Util.insert_games(2, 10);
 
 
-    System.out.println("TEST shouldLoadIncId: " + Query.get_all(Game.class));
+    System.out.println("TEST shouldUpdateIncId: " + Query.get_all(Game.class));
 
 
     Integer new_last_id = Registry.load_inc_id(Game.class, o -> o.id().id());
 
     System.out.println("TEST new last id:" + new_last_id);
     assertTrue(new_last_id == 2);
+  }
+  @Test
+  void shouldLoadIncId(){ // inserir jogos, load, inserir jogos
+    System.out.println("TEST shouldLoadIncId");
+    assertTrue(Registry.get_inc_id(Game.class) == 0);
+
+    Util.insert_games(3, 1);
+    assertTrue(Registry.get_inc_id(Game.class) == 3);
+
+    Registry.reset_last_ids();
+    Integer id = Registry.get_inc_id(Game.class);
+    System.out.println( "get inc id: " + id );
+    assertTrue(id == 0);
+
+    Registry.load_inc_id(Game.class, o -> o.id().id());
+    System.out.println( "get inc id after load: " + 
+      Registry.get_inc_id(Game.class)
+
+    );
+    assertTrue(Registry.get_inc_id(Game.class) == 2);
+
+    Util.insert_games(3, 1);
+    System.out.println( "get inc id after insert: " + 
+      Registry.get_inc_id(Game.class)
+
+    );
+    assertTrue(Registry.get_inc_id(Game.class) == 5);
   }
 }
 class QueryTest extends FilePersistenceBaseTest {

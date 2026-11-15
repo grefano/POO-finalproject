@@ -8,3 +8,11 @@
 {"id":{"id":0},"title":"celeste","genre":["indie"],"platform":["pc"],"quantity":10,"price":123.0}
 {"id":{"id":1},"title":"catose","genre":[],"platform":[],"quantity":2019902814,"price":1.0}
 {"id":{"id":0},"title":"f aef","genre":["two_d"],"platform":["mobile"],"quantity":12,"price":135.0}
+{"id":{"id":0},"title":"afeafa","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":1},"title":"aefl kaejflkej","genre":[],"platform":[],"quantity":123,"price":123.0}
+{"id":{"id":2},"title":"dawdwaaw dawda","genre":[],"platform":[],"quantity":23124,"price":124124.0}
+{"id":{"id":0},"title":"awd wadawaad","genre":[],"platform":[],"quantity":123,"price":123.0}
+{"id":{"id":0},"title":"maisumteste","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":2},"title":"ultimotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":3},"title":"ultimomesmotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":3},"title":"deveser3","genre":[],"platform":[],"quantity":1,"price":1.0}

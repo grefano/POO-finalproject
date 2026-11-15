@@ -150,7 +150,7 @@ class Registry {
     for (T o : objs) {
       System.out.println(type + " 119: " + last_ids.get(type));
 
-      if (last_ids.get(type) != null &&  get_pk.apply(o) > last_ids.get(type)){
+      if (last_ids.get(type) == null ||  get_pk.apply(o) > last_ids.get(type)){
 	Registry.last_ids.put(type, get_pk.apply(o));
       }
     }
@@ -158,7 +158,9 @@ class Registry {
   }
 
   static void reset_last_ids(){
-    last_ids.replaceAll((k, v) -> 0);
+    // last_ids.replaceAll((k, v) -> null);
+    last_ids.clear();
+    System.out.println("last ids: " + last_ids.toString());
   }
 }
 
@@ -659,6 +661,7 @@ class CLI {
 	}
 	Game game = get_new_game();
 	try {
+	  System.out.println("insert new get game: " + game.toString());
 	  UI.insert_game(game);
 
 	} catch (PermissionException e){
@@ -910,6 +913,8 @@ class App {
     Registry.load_inc_id(Game.class, o -> o.id().id());
     Registry.load_inc_id(Rent.class, o -> o.id().id());
     Registry.load_inc_id(User.class, o -> o.id().id());
+
+    System.out.println("inc id: " + Registry.get_inc_id(Game.class));
 
     try {
       UI.login("123456789", "1234");
