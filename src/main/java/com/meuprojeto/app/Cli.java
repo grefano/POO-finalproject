@@ -1,7 +1,9 @@
 
 package com.meuprojeto.app;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.function.BiFunction;
@@ -109,18 +111,20 @@ class CLI {
 
   }
   static public void filter_games(List<Game> games) {
-    while(true) {
 
-      // GameGenre genre = get_enum(GameGenre.class);
-      List<GameGenre> genres = get_list_unique(l -> get_enum(l, GameGenre.class));
-      System.out.println("genres: " + genres.toString());
+    List<GameGenre> genres = get_list_unique(l -> get_enum(l, GameGenre.class));
+    System.out.println("genres: " + genres.toString());
 
+    games.removeIf(game ->
+      !Arrays.asList(game.genre()).containsAll(genres)
+    );
 
-      return;
+    List<GamePlatform> platforms = get_list_unique(l -> get_enum(l, GamePlatform.class));
+    System.out.println("platforms: " + platforms.toString());
 
-
-    }
-
+    games.removeIf(game ->
+      !Arrays.asList(game.platform()).containsAll(platforms)
+    );
   }
   static public void show_all_games() {
     List<Game> games = Query.get_all(Game.class);

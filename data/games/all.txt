@@ -16,3 +16,4 @@
 
 
 {"id":{"id":7},"title":"testealefjaeflk","genre":[],"platform":[],"quantity":1,"price":1.0}
+{"id":{"id":8},"title":"teste1","genre":["three_d"],"platform":["pc"],"quantity":100,"price":100.0}
