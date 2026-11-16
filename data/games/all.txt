@@ -1,19 +1,11 @@
 {"id":{"id":0},"title":"maisumteste","genre":[],"platform":[],"quantity":1,"price":1.0}
-
-
 {"id":{"id":1},"title":"aefl kaejflkej","genre":[],"platform":[],"quantity":119,"price":123.0}
-
-
-
-
 {"id":{"id":2},"title":"ultimotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":3},"title":"ultimomesmotestepfv","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":4},"title":"porfavor","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":5},"title":"denovooefo","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":6},"title":"outrotestelegal","genre":[],"platform":[],"quantity":1,"price":1.0}
-
-
-
-
 {"id":{"id":7},"title":"testealefjaeflk","genre":[],"platform":[],"quantity":1,"price":1.0}
 {"id":{"id":8},"title":"teste1","genre":["three_d"],"platform":["pc"],"quantity":100,"price":100.0}
+{"id":{"id":9},"title":"qunatidadenegativa","genre":[],"platform":[],"quantity":-203,"price":-320.0}
+{"id":{"id":10},"title":"fafef","genre":[],"platform":[],"quantity":1231321,"price":1232.0}

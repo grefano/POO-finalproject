@@ -307,13 +307,38 @@ class CLI {
     System.out.println("platforms: ");
     List<GamePlatform> platform = get_list_unique(l -> get_enum(l, GamePlatform.class));
 
-    System.out.println("quantity: ");
-    Integer quantity = 0;
-    quantity = Integer.valueOf(get_line());
+    Integer quantity = null;
+    while(true){
+      System.out.println("quantity: ");
+      try {
+	quantity = Integer.valueOf(get_line());
 
-    System.out.println("price: ");
-    Float price = 0.0f;
-    price = Float.valueOf(get_line());
+      } catch (NumberFormatException e) {
+	System.out.println("invalid number format");
+	continue;
+      }
+      if (quantity >= 0) {
+	break;
+      }
+      System.out.println("must be greater than or equal to 0");
+
+    }
+
+    Float price = null;
+    while(true){
+      System.out.println("price: ");
+      try {
+	price = Float.valueOf(get_line());
+      } catch (NumberFormatException e) {
+	System.out.println("invalid number format");
+	continue;
+      }
+      if (price > 0) {
+	break;
+      }
+      System.out.println("must be greater than 0");
+
+    }
 
 
 
