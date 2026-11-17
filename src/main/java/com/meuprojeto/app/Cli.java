@@ -93,9 +93,12 @@ class CLI {
 
   }
   // lista de valores únicos, se usuário digitar um valor repetido ele será removido da lista
-  public static <T> List<T> get_list_unique(Function<String, T> on_input) {
+  public static <T> List<T> get_list_unique(String prompt, Function<String, T> on_input) {
     // FIXME: type blank mostra primeiro o "menu de erro" do get_enum e depois verifica se é null no get_list
-    return get_list((in, list) -> {
+    return get_list(prompt, (in, list) -> {
+      if (in.isBlank()){
+	return list;
+      }
       T o = on_input.apply(in);
       if (o == null){
 	return list;
@@ -112,19 +115,29 @@ class CLI {
   }
   static public void filter_games(List<Game> games) {
 
-    List<GameGenre> genres = get_list_unique(l -> get_enum(l, GameGenre.class));
+    List<GameGenre> genres = get_list_unique("genre: ", l -> get_enum(l, GameGenre.class));
     System.out.println("genres: " + genres.toString());
 
     games.removeIf(game ->
       !Arrays.asList(game.genre()).containsAll(genres)
     );
 
-    List<GamePlatform> platforms = get_list_unique(l -> get_enum(l, GamePlatform.class));
+    List<GamePlatform> platforms = get_list_unique("platform: ", l -> get_enum(l, GamePlatform.class));
     System.out.println("platforms: " + platforms.toString());
 
     games.removeIf(game ->
       !Arrays.asList(game.platform()).containsAll(platforms)
     );
+
+    System.out.println("title: ");
+    String title = get_line();
+    if (!title.equals("")){
+      games.removeIf(game ->
+	!game.title().contains(title)
+      );
+
+    }
+    
   }
   static public void show_all_games() {
     List<Game> games = Query.get_all(Game.class);
@@ -301,11 +314,9 @@ class CLI {
     System.out.println("title: ");
     String title = get_line();
 
-    System.out.println("genres: ");
-    List<GameGenre> genre = get_list_unique(l -> get_enum(l, GameGenre.class));
+    List<GameGenre> genre = get_list_unique("genre: ", l -> get_enum(l, GameGenre.class));
 
-    System.out.println("platforms: ");
-    List<GamePlatform> platform = get_list_unique(l -> get_enum(l, GamePlatform.class));
+    List<GamePlatform> platform = get_list_unique("platform: ", l -> get_enum(l, GamePlatform.class));
 
     Integer quantity = null;
     while(true){
@@ -346,10 +357,11 @@ class CLI {
     
 
   }
-  public static <T> List<T> get_list(BiFunction<String, List<T>, List<T>> on_input) { 
+  public static <T> List<T> get_list(String prompt, BiFunction<String, List<T>, List<T>> on_input) { 
     List<T> result = new ArrayList<>();
 
     while(true){
+      System.out.println(prompt);
       String line = get_line();
       result = on_input.apply(line, result);
       for (T i : result) {
