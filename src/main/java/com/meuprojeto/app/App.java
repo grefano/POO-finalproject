@@ -31,9 +31,9 @@ class App {
     }
 
     // TODO: store userprofile
-    DataPersistence.insert(
-      new UserProfile(new ArrayList<>())
-    );
+    // DataPersistence.insert(
+    //   new UserProfile(new ArrayList<>())
+    // );
 
 
     CLI.loop();
