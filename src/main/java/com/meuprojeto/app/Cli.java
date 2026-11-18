@@ -150,6 +150,7 @@ class CLI {
 
     }
   }
+  // TODO: mostrar historico de outro usuario
   static public void show_rent_history() {
     List<Rent> rents = UI.get_rent_history();
     rents.forEach(r -> {

@@ -12,6 +12,15 @@ enum GamePlatform { console, mobile, pc }
 
 enum UserPermissions { adm } 
 
+interface Model <T extends Model<T>> {
+  // usado pra verificar se um objeto semelhante já foi criado (visto que não pode comparar ids nem cada atributo individualemente)
+  boolean equivalent(T o);
+  // usado pra verificar se é o objeto que estou procurando (geralmente pelo id)
+  // comparar primary key
+  boolean same(T o);
+
+}
+
 record User(UserId id, String name, String cpf, UserPermissions[] perms) implements Model<User>{
   @Override
   public boolean equivalent(User o){
@@ -23,7 +32,8 @@ record User(UserId id, String name, String cpf, UserPermissions[] perms) impleme
   }
 }
 
-record UserProfile(ArrayList<Rent> rent_story)  implements Model<UserProfile> { // FIXME: UserProfile vs UserRegistry
+
+record UserProfile(ArrayList<Rent> rent_story)  implements Model<UserProfile> {
   // historico de alugueis
   @Override
   public boolean equivalent(UserProfile o){
@@ -38,14 +48,6 @@ record UserProfile(ArrayList<Rent> rent_story)  implements Model<UserProfile> { 
 
 }
 
-interface Model <T extends Model<T>> {
-  // usado pra verificar se um objeto semelhante já foi criado (visto que não pode comparar ids nem cada atributo individualemente)
-  boolean equivalent(T o);
-  // usado pra verificar se é o objeto que estou procurando (geralmente pelo id)
-  // comparar primary key
-  boolean same(T o);
-
-}
 record Game( GameId id, String title, GameGenre[] genre, GamePlatform[] platform, Integer quantity, Float price) implements Model<Game> {
   @Override
   public boolean equivalent(Game o) {
