@@ -41,7 +41,7 @@ class Util {
   }
   public static List<Game> insert_games(int amount, int amount_in_stock) {
     List<Game> result = create_games(amount, amount_in_stock);
-    System.out.println("created games: " + result);
+    System.out.println("jogos criados: " + result);
     for (int i = 0; i < amount; i++){
       DataPersistence.insert(result.get(i));
     }

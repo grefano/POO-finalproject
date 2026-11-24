@@ -22,7 +22,6 @@ class App {
     Registry.load_inc_id(Rent.class, o -> o.id().id());
     Registry.load_inc_id(User.class, o -> o.id().id());
 
-    System.out.println("inc id: " + Registry.get_inc_id(Game.class));
 
     try {
       UI.login("123456789", "1234");

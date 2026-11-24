@@ -20,7 +20,7 @@ class CLI {
   static public void rent() {
     UI.start_rent();
 
-    System.out.println("user: ");
+    System.out.println("usuário (não digite nada para selecionar o usuário que está autenticado no momento): ");
     line = get_line();
     if (!line.equals("")){
       System.out.println("não é possível alugar para outros usuários no momento");
@@ -28,17 +28,17 @@ class CLI {
 
     }
     while(true){
-      System.out.println("game (enter blank to finish): ");
+      System.out.println("jogo (não digite nada para finalizar seleção): ");
       line = get_line();
       if (line.equals("")){
 	break;
       }
       GameId game = get_game(line);
       if (game == null){
-	System.out.println("game doesnt exist");
+	System.out.println("jogo não existe");
 	continue;
       }
-      System.out.println("game chosen: " + game);
+      System.out.println("jogo escolhido: " + game);
       UI.add_game_to_rent(game, 1);
 
 
@@ -46,13 +46,13 @@ class CLI {
 
     boolean couldrent = UI.finish_rent();
     if (!couldrent){
-      System.out.println("couldnt rent");
+      System.out.println("não pôde realizar aluguel");
     }
   }
   static public void rent_return() {
     RentId rentid = get_rent();
     if (rentid == null){
-      System.out.println("invalid rent");
+      System.out.println("aluguel inválido");
       return;
     }
     UI.rent_return(rentid);
@@ -60,6 +60,7 @@ class CLI {
   }
   static public RentId get_rent() {
     // TODO: paginação
+    System.out.println("escolha um dos seus alugueis para devolver");
     List<Rent> rents = Query.get_by_attribute(Rent.class, o ->
     ( o.state().equals(RentState.pending)
       || o.state().equals(RentState.pending_late) )
@@ -78,12 +79,12 @@ class CLI {
       try {
 	sel = Integer.valueOf(line);
 	if (sel < 0 || sel >= rents.size()) {
-	  System.out.println("invalid value");
+	  System.out.println("valor inválido");
 	  continue;
 	}
 
       } catch (NumberFormatException e) {
-	System.out.println("invalid value");
+	System.out.println("valor inválido");
 	continue;
 
       }
@@ -115,21 +116,21 @@ class CLI {
   }
   static public void filter_games(List<Game> games) {
 
-    List<GameGenre> genres = get_list_unique("genre: ", l -> get_enum(l, GameGenre.class));
-    System.out.println("genres: " + genres.toString());
+    List<GameGenre> genres = get_list_unique("gênero: ", l -> get_enum(l, GameGenre.class));
+    System.out.println("gêneros: " + genres.toString());
 
     games.removeIf(game ->
       !Arrays.asList(game.genre()).containsAll(genres)
     );
 
-    List<GamePlatform> platforms = get_list_unique("platform: ", l -> get_enum(l, GamePlatform.class));
-    System.out.println("platforms: " + platforms.toString());
+    List<GamePlatform> platforms = get_list_unique("plataforma: ", l -> get_enum(l, GamePlatform.class));
+    System.out.println("plataformas: " + platforms.toString());
 
     games.removeIf(game ->
       !Arrays.asList(game.platform()).containsAll(platforms)
     );
 
-    System.out.println("title: ");
+    System.out.println("título: ");
     String title = get_line();
     if (!title.equals("")){
       games.removeIf(game ->
@@ -146,7 +147,7 @@ class CLI {
       System.out.println(g.title() + " (" + g.quantity() + ")" + " R$"+g.price());
     }
     if (games.size() == 0){
-      System.out.println("no games registered");
+      System.out.println("nenhum jogo com essas características foi encontrado");
 
     }
   }
@@ -169,7 +170,7 @@ class CLI {
       System.out.println(r.state().toString() + " games [" + titles + " ]");
     });
     if (rents.size() == 0){
-      System.out.println("no rents");
+      System.out.println("nenhum aluguel");
     }
 
   }
@@ -187,13 +188,13 @@ class CLI {
 	return;
       }
       if (event == EVENTS_AUTH.USER_INVALID) {
-	System.out.println("failed. user invalid");
+	System.out.println("falhou. usuário inválido");
       } 
       if (event == EVENTS_AUTH.PASSWORD_INVALID) {
-	System.out.println("failed. password invalid");
+	System.out.println("falhou. senha inválida");
       }
 
-      System.out.println("- 1 try again \n- 2 create account\n- 3 exit");
+      System.out.println("- 1 tentar de novo \n- 2 criar conta\n- 3 sair");
       line =  get_line();
       if (line.equals("1")) {
 	continue;
@@ -214,7 +215,7 @@ class CLI {
     }
   }
   static public void register(String cpf, String password) {
-    System.out.println("name: ");
+    System.out.println("nome: ");
     String name = get_line();
     // TODO: scan input qnd caller não passa
     while(true){
@@ -225,7 +226,7 @@ class CLI {
       } catch (Exception e) {
 	System.out.println(e.toString());
       }
-      System.out.println("- 1 try again\n- 2 exit");
+      System.out.println("- 1 tentar de novo\n- 2 sair");
       line = get_line();
       if (line.equals("2")) {
 	break;
@@ -242,8 +243,8 @@ class CLI {
     while(true){
 
       System.out.println("=== MENU ===");
-      System.out.println("you are logged as " + Permission.get_user_name());
-      System.out.println("- 1 rent\n- 2 show all games\n- 3 show rent history\n- 4 login\n- 5 insert game\n- 6 rent return\n- 0 quit");
+      System.out.println("você está logado como " + Permission.get_user_name());
+      System.out.println("- 1 alugar\n- 2 mostrar todos os jogos\n- 3 mostrar histórico de alugueis\n- 4 login\n- 5 inserir jogo\n- 6 realizar devolução\n- 0 sair");
       String line = get_line();
       if (line.equals("1")) {
 	rent();
@@ -273,16 +274,15 @@ class CLI {
   }
   public static void insert_game() {
     if (!Permission.can_insert_persistence()) {
-      System.out.println("have no permission to insert new game");
+      System.out.println("usuário não tem permissão para inserir um jogo novo");
       return;
     }
     Game game = get_new_game();
     try {
-      System.out.println("insert new get game: " + game.toString());
       UI.insert_game(game);
 
     } catch (PermissionException e){
-      System.out.println("have no permission to insert new games");
+      System.out.println("usuário não tem permissão para inserir um jogo novo");
     }
   }
   public static <T extends Enum<T>> T get_enum(Class<T> classe) {
@@ -292,8 +292,8 @@ class CLI {
     try {
       return Enum.valueOf(classe, l);
     } catch (IllegalArgumentException e) {
-      System.out.println("chosen option doesnt exist");
-      System.out.println("- 1 continue\n- 2 show all options\n- 3 create genre");
+      System.out.println("opção escolhida não existe");
+      System.out.println("- 1 continuar\n- 2 mostrar todas as opções\n- 3 criar gênero");
       String line = get_line();
       if (line.equals("2")) {
 	for (T enu : classe.getEnumConstants()) {
@@ -312,43 +312,43 @@ class CLI {
 
   }
   public static Game get_new_game() {
-    System.out.println("title: ");
+    System.out.println("título: ");
     String title = get_line();
 
-    List<GameGenre> genre = get_list_unique("genre: ", l -> get_enum(l, GameGenre.class));
+    List<GameGenre> genre = get_list_unique("gênero: ", l -> get_enum(l, GameGenre.class));
 
-    List<GamePlatform> platform = get_list_unique("platform: ", l -> get_enum(l, GamePlatform.class));
+    List<GamePlatform> platform = get_list_unique("plataforma: ", l -> get_enum(l, GamePlatform.class));
 
     Integer quantity = null;
     while(true){
-      System.out.println("quantity: ");
+      System.out.println("quantidade: ");
       try {
 	quantity = Integer.valueOf(get_line());
 
       } catch (NumberFormatException e) {
-	System.out.println("invalid number format");
+	System.out.println("formato de número inválido");
 	continue;
       }
       if (quantity >= 0) {
 	break;
       }
-      System.out.println("must be greater than or equal to 0");
+      System.out.println("deve ser maior ou igual à 0");
 
     }
 
     Float price = null;
     while(true){
-      System.out.println("price: ");
+      System.out.println("preço: ");
       try {
 	price = Float.valueOf(get_line());
       } catch (NumberFormatException e) {
-	System.out.println("invalid number format");
+	System.out.println("formato de número inválido");
 	continue;
       }
       if (price > 0) {
 	break;
       }
-      System.out.println("must be greater than 0");
+      System.out.println("deve ser maior que 0");
 
     }
 

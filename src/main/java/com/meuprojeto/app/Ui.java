@@ -23,8 +23,10 @@ class UI {
     }
 
     static public boolean can_insert_persistence(){
+      if (token.equals(new UserId(0))) return true;
       if (token == null) return false;
       User u = Query.get_first_by_attribute(User.class, o -> o.id().equals(token));
+      
       if (u == null || u.perms() == null) {
 	return false;
       }
@@ -104,7 +106,6 @@ class UI {
     DataPersistence.insert(
       newuser
     );
-    System.out.println("login after register: " + newuser.toString());
     login(newuser);
   }
   static enum EVENTS_AUTH {

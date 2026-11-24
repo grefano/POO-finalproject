@@ -32,7 +32,7 @@ class GameRentManage {
     int amount_games = games.values().stream().mapToInt(Integer::intValue).sum();
 
 
-    System.out.println("amount games rented: " + amount_games_rented.get() + " amount games: " + amount_games);
+    System.out.println("quantidade de jogos alugados: " + amount_games_rented.get() + " amount games: " + amount_games);
     if (amount_games_rented.get() + amount_games > 3) {
       return false;
     }
@@ -47,7 +47,7 @@ class GameRentManage {
       whole_games.put(g, gg);
 
       if (gg == null){
-	throw new Error("gameId doesnt correspond to an existing game");
+	throw new Error("gameId não corresponde à um jogo existente");
       }
       if (gg.quantity() - qtd < 0){
 	return false;

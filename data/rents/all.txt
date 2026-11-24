@@ -7,4 +7,5 @@
 {"id":{"id":3},"date":"Nov 22, 2026, 8:01:07 PM","return_deadline":"Nov 15, 2026, 8:01:07 PM","user":{"id":0},"games":[{"id":1}],"state":"returned","price_paid":184.5}
 
 {"id":{"id":4},"date":"Nov 22, 2026, 8:02:39 PM","return_deadline":"Nov 15, 2026, 8:02:39 PM","user":{"id":0},"games":[{"id":1}],"state":"pending","price_paid":0.0}
-{"id":{"id":5},"date":"Nov 22, 2026, 8:03:17 PM","return_deadline":"Nov 15, 2026, 8:03:17 PM","user":{"id":0},"games":[{"id":1}],"state":"pending","price_paid":0.0}
+{"id":{"id":5},"date":"Nov 22, 2026, 8:03:17 PM","return_deadline":"Nov 15, 2026, 8:03:17 PM","user":{"id":0},"games":[{"id":1}],"state":"returned","price_paid":184.5}
+

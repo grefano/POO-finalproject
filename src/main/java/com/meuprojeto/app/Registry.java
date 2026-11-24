@@ -22,7 +22,6 @@ public class Registry {
 
   private static <T extends Model<T>> Integer get_id(Class<T> type){
     int id = last_ids.merge(type, 0, (last, ignored) -> last + 1);
-    System.err.println("get id for " + type + " = " + id);
     return id;
   }
   // if a object is created now, what would be its id?

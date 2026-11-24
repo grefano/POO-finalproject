@@ -76,13 +76,11 @@ class DataPersistence {
   }
   public static <T extends Model<T>> void update(Class<T> type, T newrow){
     Row<T> row = Query.search_first_by_attribute(type, o -> o.get().same(newrow));
-    System.out.println("update row find: " + model_object_to_string(row.get()));
     try {
       List<String> lines = Files.readAllLines(dir_model(type));
 
       String obj_str = model_object_to_string(newrow) + System.lineSeparator();
       lines.set(row.line, obj_str);
-      System.out.println("update lines: " + lines);
       Files.write(dir_model(type), lines, StandardOpenOption.WRITE);
     } catch (IOException e) {
       System.err.println("ERROR " + e);
@@ -92,7 +90,6 @@ class DataPersistence {
   public static <T extends Model<T>> void insert(T obj) {
     Path path_file = dir_model(obj.getClass());
     try {
-      System.out.println("parent: " + path_file.getParent());
       Files.createDirectories(path_file.getParent());
     } catch (FileAlreadyExistsException e){
     } catch (IOException e){
@@ -111,7 +108,6 @@ class DataPersistence {
       List<T> objs = Query.get_all((Class<T>) obj.getClass());
       for (T o : objs) {
 	if (o != null && obj.equivalent(o)) {
-	System.out.println("equivalent get bent" + model_object_to_string(obj) + " " + model_object_to_string(o));
 	  return;
 
 	}
@@ -139,7 +135,6 @@ class DataPersistence {
     System.out.println("remove row " + row.get());
     try {
       List<String> lines = Files.readAllLines(dir_model(type));
-      System.out.println(row.line + " remove lines " + lines);
       lines.set(row.line, "");
 Files.write(path_file, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
     } catch (IOException e) {
